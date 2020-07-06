@@ -249,6 +249,11 @@ async function tg_copy ({ fid, target, chat_id, update }) { // return task_id
       sm({ chat_id, text, parse_mode: 'HTML' })
     })
     .catch(err => {
+      const task_id = record && record.id
+      if (task_id){
+      	db.prepare('update task set status=? where id=?').run('error', task_id)
+      	db.close()
+      }
       if (!record) record = {}
       console.error('複製失敗', fid, '-->', target)
       console.error(err)
