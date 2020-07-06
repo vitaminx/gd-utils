@@ -1,246 +1,155 @@
-# Google Drive 百宝箱
+# gd-utils-cht
 
-> 不只是最快的 google drive 拷贝工具 [与其他工具的对比](./compare.md)
+> 不只是最快的 google drive 拷貝工具 [與其他工具的對比](./compare.md)
 
-## 一键安装脚本    
-- 安装机器人需准备好以下四个条件：    
-  - 在Telegram上注册好机器人并取得并记录下该机器人TOKEN     
-  - 一个域名在cloudflare解析到该机器人所在VPS的IP     
-  - 向机器人@userinfobot获取个人TG账号ID并记录    
-  - 注册好一个Google team drive加入sa并记录下该盘ID    
-- 准备好以上四个条件后，复制以下全部内容粘贴到VPS命令行窗口回车即可    
-  - gdutils项目一键部署脚本（包括“查询转存”和“TG机器人”两部分）    
+> 我的readme可能不夠完全, 主要寫上我更新、修改的內容, 具體說明還是看[這邊](https://github.com/iwestlin/gd-utils)和[這邊](https://github.com/vitaminx/gd-utils)吧
+## 更新紀錄
+### 2020.07.07
+  - 參照原作者@iwestlin更新tg.js及gd.js
+  - 整體繁體化, 介面部分
+  - 新增用戶可以在config.js自訂按鈕顯示的個數(每列), 可設定為1或2
+### 2020.07.06
+  - 部分繁體中文化
+  - 執行/task命令時, 會回傳完成度百分比
+  - 複製完成時, 跳出的通知會顯示文件大小
+## tg_bot 修改部分
+- 執行/task命令時, 會回傳完成度百分比
+  
+  ![](./pic/example2.png)
+- 複製完成時, 跳出的通知會顯示文件大小
+
+  ![](./pic/example3.png)
+> 這邊說一下我用的服務及配置(免費配置): always-free gcp Compute Engine + zerossl + 免費的domain hosting 
+>注意我的配置沒有用到cloudflare
+## 一鍵安裝腳本(感謝 腳本製作者 [@vitaminx](https://github.com/vitaminx))
+- 這邊的安裝腳本我有稍作修改 與fork過來的原版不一樣
+  - 不使用cloudflare解析
+  - ssl另外配置在nginx服務當中(後面會說明證書放置路徑)
+- 具體安裝條件、限制請去參考[腳本原作者的專案](https://github.com/vitaminx/gd-utils)
+- 這邊放了貼上就能用的命令
+  - gdutils項目一鍵部署腳本（包括“查詢轉存”和“TG機器人”兩部分）
   ```    
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/vitaminx/gd-utils/master/gdutilsinstall.sh)"
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilsinstall.sh)"
   ```    
-  - gdutils项目一键部署脚本之“转存查询部分”    
+  - gdutils項目一鍵部署腳本之“轉存查詢部分”    
   ```    
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/vitaminx/gd-utils/master/gdutilscsinstall.sh)"
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilscsinstall.sh)"
   ```    
-  - gdutils项目一键部署脚本之“TG机器人部分”    
+  - gdutils項目一鍵部署腳本之“TG機器人部分”    
   ```    
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/vitaminx/gd-utils/master/gdutilsbotinstall.sh)"
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilsbotinstall.sh)"
   ```  
-- 安装过程中需要输入一下四个参数：    
-  - 机器人TOKEN：这个在Telegram里面找“@BotFather”注册即可获得    
-  - Telegram用户ID：在Telegram里面向机器人@userinfobot发送消息即可获得
-  - Google team drive ID：即为你转存文件的默认地址，脚本强制要求写谷歌团队盘ID     
+- 安裝過程中需要輸入一下四個參數：    
+  - 機器人TOKEN：這個在Telegram裡面找“@BotFather”註冊即可獲得    
+  - Telegram用戶ID：在Telegram裡面向機器人@userinfobot发送消息即可獲得
+  - Google team drive ID：即為你轉存文件的預設地址，腳本強制要求寫Google小組雲端硬碟ID     
   - 域名：你在cloudflare上解析到VPS的域名（格式：abc.34513.com）    
-  - 脚本安装问题请信息发给TG：onekings 或 vitaminor@gmail.com    
-  - 系统使用问题（如无法转存、重启连不上机器人等等）请联系项目作者@vegg
-- 测试可用完美安装系统：    
+  - 腳本安裝問題請信息發給TG：onekings 或 vitaminor@gmail.com    
+  - 系統使用問題（如無法轉存、重啟連不上機器人等等）請聯系項目作者@vegg
+- 測試可用完美安裝系統：    
   - Centos 7/8    
   - debian 9/10
-  - ubuntu 16.04/18.04/19.10/20.04     
-  
-## demo
-[https://drive.google.com/drive/folders/124pjM5LggSuwI1n40bcD5tQ13wS0M6wg](https://drive.google.com/drive/folders/124pjM5LggSuwI1n40bcD5tQ13wS0M6wg)
+  - ubuntu 16.04/18.04/19.10/20.04
 
-## 更新日志
-[2020-06-30]
+## 搭建步驟
+1. 啟用一台主機, VPS、私人伺服器都行(私人伺服器如果沒有設定硬撥, 必須去路由器設定端口對應)
+2. 確認固定ip, 或是用ddns服務 都行
+3. 使用domain hosting服務解析到動態域名, 或新增A record指定到固定ip
+4. 用domain hosting設定好的固定域名, 去申請ssl證書
+5. 將證書放到對應路徑 /etc/ssl/certificate.crt 和 /etc/ssl/private.key
+6. 設定完成後, 確認主機的端口開放
+7. 執行安裝腳本, 就會自動以nginx起動服務, 特別設定了http轉https的跳轉
 
-- 命令行操作时，不换行输出进度信息，同时将进度信息输出间隔调整为1秒
-- 隐藏 timeout exceed 报错信息
-
-## 重要更新（2020-06-29）
-如果你遇到了以下几种问题，请务必阅读此节：
-
-- 任务异常中断
-- 命令行日志无限循环输出但进度不变
-- 复制完发现丢文件
-
-有不少网友遇到这些问题，但是作者一直无法复现，直到有tg网友发了张运行日志截图：
-![](./static/error-log.png)
-报错日志的意思是找不到对应的目录ID，这种情况会发生在SA没有对应目录的阅读权限的时候。
-当进行server side copy时，需要向Google的服务器提交要复制的文件ID，和复制的位置，也就是新创建的目录ID，由于在请求时是随机选取的SA，所以当选中没有权限的SA时，这次拷贝请求没有对应目录的权限，就会发生图中的错误。
-
-**所以，上述这些问题的源头是，sa目录下，混杂了没有权限的json文件！**
-
-以下是解决办法：
-- 在项目目录下，执行 `git pull` 拉取最新代码
-- 执行 `./validate-sa.js -h` 查看使用说明
-- 选择一个你的sa拥有阅读权限的目录ID，执行 `./validate-sa.js 你的目录ID`
-
-程序会读取sa目录下所有json文件，依次检查它们是否拥有对 `你的目录ID` 的阅读权限，如果最后发现了无效的SA，程序会提供选项允许用户将无效的sa json移动到特定目录。
-
-将无效sa文件移动以后，如果你使用了pm2启动，需要 `pm2 reload server` 重启下进程。
-
-操作示例： [https://drive.google.com/drive/folders/1iiTAzWF_v9fo_IxrrMYiRGQ7QuPrnxHf](https://drive.google.com/drive/folders/1iiTAzWF_v9fo_IxrrMYiRGQ7QuPrnxHf)
-
-## 常见问题
-下面是一些网友的踩坑心得，如果你配置的时候也不小心掉进坑里，可以进去找找有没有解决办法：
-
-- [ikarosone 基于宝塔的搭建过程](https://www.ikarosone.top/archives/195.html)
-
-- [@greathappyforest 踩的坑](doc/tgbot-appache2-note.md)
-
-在命令行操作时如果输出 `timeout exceed` 这样的消息，是正常情况，不会影响最终结果，因为程序对每个请求都有7次重试的机制。
-如果timeout的消息比较多，可以考虑降低并行请求数，下文有具体方法。
-
-复制结束后，如果最后输出的消息里有 `未读取完毕的目录ID`，只需要在命令行执行上次同样的拷贝命令，选continue即可继续。
-
-如果你成功复制完以后，统计新的文件夹链接发现文件数比源文件夹少，说明Google正在更新数据库，请给它一点时间。。一般等半小时再统计数据会比较完整。
-
-如果你使用tg操作时，发送拷贝命令以后，/task 进度始终未开始（在复制文件数超多的文件夹时常会发生），是正常现象。
-这是因为程序正在获取源文件夹的所有文件信息。它的运行机制严格按照以下顺序：
-
-1、获取源文件夹所有文件信息
-2、根据源文件夹的目录结构，在目标文件夹创建目录
-3、所有目录创建完成后，开始复制文件
-
-**如果源文件夹的文件数非常多（一百万以上），请一定在命令行进行操作**，因为程序运行的时候会把文件信息保存在内存中，文件数太多的话容易内存占用太多被nodejs干掉。可以像这样执行命令：
-```
- node --max-old-space-size=4096 count folder-id -S
- ```
-这样进程就能最大占用4G内存了。
-
-
-## 搭建过程
-[https://drive.google.com/drive/folders/1Lu7Cwh9lIJkfqYDIaJrFpzi8Lgdxr4zT](https://drive.google.com/drive/folders/1Lu7Cwh9lIJkfqYDIaJrFpzi8Lgdxr4zT)
-
-需要注意的地方：
-
-- 视频中省略了一个比较重要的步骤就是**从本地上传service account授权文件到 sa 目录下**，tg机器人的所有操作都是通过sa授权的，所以你们别忘了。。
-- 视频中**nginx的配置里，server_name就是你的二级域名，需要和cloudflare的设置一样**的（mybbbottt），我分开录的视频所以没做到一致。
-- 还有省略的步骤就是注册域名和把域名托管到cloudflare了，这一步网上太多资料了，甚至也有免费注册（一年）域名的地方（ https://www.freenom.com/ ），具体教程大家搜搜看吧。
-
-## 功能简介
+## 功能簡介
 本工具目前支持以下功能：
-- 统计任意（您拥有相关权限的，下同，不再赘述）目录的文件信息，且支持以各种形式（html, table, json）导出。  
-支持中断恢复，且统计过的目录（包括其所有子孙目录）信息会记录在本地数据库文件中（gdurl.sqlite）
-请在本项目目录下命令行输入 `./count -h` 查看使用帮助
+- 統計任意（您擁有相關權限的，下同，不再贅述）目錄的文件信息，且支持以各種形式（html, table, json）導出。  
+支持中斷恢覆，且統計過的目錄（包括其所有子孫目錄）信息會記錄在本地數據庫文件中（gdurl.sqlite）
+請在本項目目錄下命令行輸入 `./count -h` 查看使用幫助
 
-- 拷贝任意目录所有文件到您指定目录，同样支持中断恢复。
-支持根据文件大小过滤，可输入 `./copy -h` 查看使用帮助
+- 拷貝任意目錄所有文件到您指定目錄，同樣支持中斷恢覆。
+支持根據文件大小過濾，可輸入 `./copy -h` 查看使用幫助
 
-- 对任意目录进行去重，删除同一目录下的md5值相同的文件（只保留一个），删除空目录。
-命令行输入 `./dedupe -h` 查看使用帮助
+- 對任意目錄進行去重，刪除同一目錄下的md5值相同的文件（只保留一個），刪除空目錄。
+命令行輸入 `./dedupe -h` 查看使用幫助
 
-- 在 config.js 里完成相关配置后，可以将本项目部署在（可正常访问谷歌服务的）服务器上，提供 http api 文件统计接口
+- 在 config.js 里完成相關配置後，可以將本項目部署在（可正常訪問Google服務的）服務器上，提供 http api 文件統計接口
 
-- 支持 telegram bot，配置完成后，上述功能均可通过 bot 进行操作
+- 支持 telegram bot，配置完成後，上述功能均可通過 bot 進行操作
 
-## 环境配置
-本工具需要安装nodejs，客户端安装请访问[https://nodejs.org/zh-cn/download/](https://nodejs.org/zh-cn/download/)，服务器安装可参考[https://github.com/nodesource/distributions/blob/master/README.md#debinstall](https://github.com/nodesource/distributions/blob/master/README.md#debinstall)
+## 環境配置
+本工具需要安裝nodejs，客戶端安裝請訪問[https://nodejs.org/zh-cn/download/](https://nodejs.org/zh-cn/download/)，服務器安裝可參考[https://github.com/nodesource/distributions/blob/master/README.md#debinstall](https://github.com/nodesource/distributions/blob/master/README.md#debinstall)
 
-建议选择v12版本的node，以防接下来安装依赖出错。
+建議選擇v12版本的node，以防接下來安裝依賴出錯。
 
-如果你的网络环境无法正常访问谷歌服务，需要先在命令行进行一些配置：（如果可以正常访问则跳过此节）
+如果你的網絡環境無法正常訪問Google服務，需要先在命令行進行一些配置：（如果可以正常訪問則跳過此節）
 ```
 http_proxy="YOUR_PROXY_URL" && https_proxy=$http_proxy && HTTP_PROXY=$http_proxy && HTTPS_PROXY=$http_proxy
 ```
-请把`YOUR_PROXY_URL`替换成你自己的代理地址
+請把`YOUR_PROXY_URL`替換成你自己的代理地址
 
-## 依赖安装
-- 命令行执行`git clone https://github.com/iwestlin/gd-utils && cd gd-utils` 克隆并切换到本项目文件夹下
-- **执行 `npm install --unsafe-perm=true --allow-root` 安装依赖**，部分依赖可能需要代理环境才能下载，所以需要上一步的配置
+## 依賴安裝
+- 命令行執行`git clone https://github.com/iwestlin/gd-utils && cd gd-utils` 克隆並切換到本項目文件夾下
+- **執行 `npm install --unsafe-perm=true --allow-root` 安裝依賴**，部分依賴可能需要代理環境才能下載，所以需要上一步的配置
 
-如果在安装过程中发生报错，请切换nodejs版本到v12再试。如果报错信息里有`Error: not found: make`之类的消息，说明你的命令行环境缺少make命令，可参考[这里](https://askubuntu.com/questions/192645/make-command-not-found)或直接google搜索`Make Command Not Found`
+如果在安裝過程中发生報錯，請切換nodejs版本到v12再試。如果報錯信息里有`Error: not found: make`之類的消息，說明你的命令行環境缺少make命令，可參考[這里](https://askubuntu.com/questions/192645/make-command-not-found)或直接google搜索`Make Command Not Found`
 
-如果报错信息里有 `better-sqlite3`，先执行 `npm config set unsafe-perm=true`
-然后 `rm -rf node_module` 删掉依赖目录，最后再执行下`npm i`安装试试。
+如果報錯信息里有 `better-sqlite3`，先執行 `npm config set unsafe-perm=true`
+然後 `rm -rf node_module` 刪掉依賴目錄，最後再執行下`npm i`安裝試試。
 
-依赖安装完成后，项目文件夹下会多出个`node_modules`目录，请不要删除它，接下来进行下一步配置。
+依賴安裝完成後，項目文件夾下會多出個`node_modules`目錄，請不要刪除它，接下來進行下一步配置。
 
 ## Service Account 配置
-强烈建议使用service account（后称SA）, 获取方法请参见 [https://gsuitems.com/index.php/archives/13/](https://gsuitems.com/index.php/archives/13/#%E6%AD%A5%E9%AA%A42%E7%94%9F%E6%88%90serviceaccounts)
-获取到 SA 的 json 文件后，请将其拷贝到 `sa` 目录下
+強烈建議使用service account（後稱SA）, 獲取方法請參見 [https://gsuitems.com/index.php/archives/13/](https://gsuitems.com/index.php/archives/13/#%E6%AD%A5%E9%AA%A42%E7%94%9F%E6%88%90serviceaccounts)
+獲取到 SA 的 json 文件後，請將其拷貝到 `sa` 目錄下
 
-配置好 SA 以后，如果你不需要对个人盘下的文件进行操作，可跳过[个人帐号配置]这节，而且执行命令的时候，记得带上 `-S` 参数告诉程序使用SA授权进行操作。
+配置好 SA 以後，如果你不需要對個人盤下的文件進行操作，可跳過[個人帳號配置]這節，而且執行命令的時候，記得帶上 `-S` 參數告訴程序使用SA授權進行操作。
 
-## 个人帐号配置
-- 命令行执行 `rclone config file` 找到 rclone 的配置文件路径
-- 打开这个配置文件 `rclone.conf`, 找到 `client_id`, `client_secret` 和 `refresh_token` 这三个变量，将其分别填入本项目下的 `config.js` 中，需要注意这三个值必须被成对的英文引号包裹，且引号后以英文逗号结尾，也就是需要符合JavaScript的[对象语法](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/Object_initializer)
+## 個人帳號配置
+- 命令行執行 `rclone config file` 找到 rclone 的配置文件路徑
+- 打開這個配置文件 `rclone.conf`, 找到 `client_id`, `client_secret` 和 `refresh_token` 這三個變量，將其分別填入本項目下的 `config.js` 中，需要注意這三個值必須被成對的英文引號包裹，且引號後以英文逗號結尾，也就是需要符合JavaScript的[對象語法](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/Object_initializer)
 
-如果你没有配置过rclone，可以搜索`rclone google drive 教程`完成相关配置。  
+如果你沒有配置過rclone，可以搜索`rclone google drive 教程`完成相關配置。  
 
-如果你的`rclone.conf`里没有`client_id`和`client_secret`，说明你配置rclone的时候默认用了rclone自己的client_id，连rclone自己[都不建议这样做](https://github.com/rclone/rclone/blob/8d55367a6a2f47a1be7e360a872bd7e56f4353df/docs/content/drive.md#making-your-own-client_id)，因为大家共享了它的接口调用限额，在使用高峰期可能会触发限制。
+如果你的`rclone.conf`里沒有`client_id`和`client_secret`，說明你配置rclone的時候默認用了rclone自己的client_id，連rclone自己[都不建議這樣做](https://github.com/rclone/rclone/blob/8d55367a6a2f47a1be7e360a872bd7e56f4353df/docs/content/drive.md#making-your-own-client_id)，因為大家共享了它的接口調用限額，在使用高峰期可能會觸发限制。
 
-获取自己的clinet_id可以参见这两篇文章：[Cloudbox/wiki/Google-Drive-API-Client-ID-and-Client-Secret](https://github.com/Cloudbox/Cloudbox/wiki/Google-Drive-API-Client-ID-and-Client-Secret) 和 [https://p3terx.com/archives/goindex-google-drive-directory-index.html#toc_2](https://p3terx.com/archives/goindex-google-drive-directory-index.html#toc_2)
+獲取自己的clinet_id可以參見這兩篇文章：[Cloudbox/wiki/Google-Drive-API-Client-ID-and-Client-Secret](https://github.com/Cloudbox/Cloudbox/wiki/Google-Drive-API-Client-ID-and-Client-Secret) 和 [https://p3terx.com/archives/goindex-google-drive-directory-index.html#toc_2](https://p3terx.com/archives/goindex-google-drive-directory-index.html#toc_2)
 
-获取到client_id和client_secret后，再次执行一遍`rclone config`，创建一个新的remote，**在配置过程中一定要填入你新获取的clinet_id和client_secret**，就能在`rclone.conf`里看到新获取的`refresh_token`了。**注意，不能使用之前的refrest_token**，因为它对应的是rclone自带的client_id
+獲取到client_id和client_secret後，再次執行一遍`rclone config`，創建一個新的remote，**在配置過程中一定要填入你新獲取的clinet_id和client_secret**，就能在`rclone.conf`里看到新獲取的`refresh_token`了。**注意，不能使用之前的refrest_token**，因為它對應的是rclone自帶的client_id
 
-参数配置好以后，在命令行执行 `node check.js`，如果命令返回了你的谷歌硬盘根目录的数据，说明配置成功，可以开始使用本工具了。
+參數配置好以後，在命令行執行 `node check.js`，如果命令返回了你的Google雲端硬碟根目錄的數據，說明配置成功，可以開始使用本工具了。
 
 ## Bot配置
-如果要使用 telegram bot 功能，需要进一步配置。
+如果要使用 telegram bot 功能，需要進一步配置。
 
-首先在 [https://core.telegram.org/bots#6-botfather](https://core.telegram.org/bots#6-botfather) 根据指示拿到 bot 的 token，然后填入 config.js 中的 `tg_token` 变量。
+首先在 [https://core.telegram.org/bots#6-botfather](https://core.telegram.org/bots#6-botfather) 根據指示拿到 bot 的 token，然後填入 config.js 中的 `tg_token` 變量。
 
-然后获取自己的 telegram username，这个username不是显示的名称，而是tg个人网址后面的那串字符，比如，我的tg个人网址是 `https://t.me/viegg` ，用户名就是 `viegg`，获取用户名的目的是在代码里配置白名单，只允许特定的用户调用机器人。将username填入 `config.js`里的配置，像这样：
-`tg_whitelist: ['viegg']`，就代表只允许我自己使用这个机器人了。
+然後獲取自己的 telegram username，這個username不是顯示的名稱，而是tg個人網址後面的那串字符，比如，我的tg個人網址是 `https://t.me/viegg` ，用戶名就是 `viegg`，獲取用戶名的目的是在代碼里配置白名單，只允許特定的用戶調用機器人。將username填入 `config.js`里的配置，像這樣：
+`tg_whitelist: ['viegg']`，就代表只允許我自己使用這個機器人了。
 
-如果想把机器人的使用权限分享给别的用户，只需要改成这样子： `tg_whitelist: ['viegg', '其他人的username']`
+如果想把機器人的使用權限分享給別的用戶，只需要改成這樣子： `tg_whitelist: ['viegg', '其他人的username']`
 
-接下来需要将代码部署到服务器上。
-如果你一开始就是在服务器上配置的，可以直接执行`npm i pm2 -g`
-
-如果你之前是在本地操作的，请在服务器上同样重复一遍，配置好相关参数后，执行`npm i pm2 -g`安装进程守护程序pm2
-
-安装好pm2之后，执行 `pm2 start server.js`，代码运行后会在服务器上监听`23333`端口。
-
-如果你启动程序后想看运行日志，执行 `pm2 logs`
-
-查看 pm2 守护的进程列表，执行 `pm2 l`
-
-停止运行中的进程，执行 `pm2 stop 对应的进程名称`
-
-**如果你修改了代码中的配置，需要 `pm2 reload server` 才能生效**。
-
-> 如果你不想用nginx，可以将`server.js`中的`23333`改成`80`直接监听80端口（可能需要root权限）
-
-接下来可通过nginx或其他工具起一个web服务，示例nginx配置：
+## 補充說明
+在`config.js`文件里，還有另外的幾個參數：
 ```
-server {
-  listen 80;
-  server_name your.server.name;
-
-  location / {
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_pass http://127.0.0.1:23333/;
-  }
-}
-```
-配置好nginx后，可以再套一层cloudflare，具体教程请自行搜索。
-
-检查网站是否部署成功，可以命令行执行（请将YOUR_WEBSITE_URL替换成你的网址）
-```
-curl 'YOUR_WEBSITE_URL/api/gdurl/count?fid=124pjM5LggSuwI1n40bcD5tQ13wS0M6wg'
-```
-![](./static/count.png)
-
-如果返回了这样的文件统计，说明部署成功了。
-
-最后，在命令行执行（请将[YOUR_WEBSITE]和[YOUR_BOT_TOKEN]分别替换成你自己的网址和bot token）
-```
-curl -F "url=[YOUR_WEBSITE]/api/gdurl/tgbot" 'https://api.telegram.org/bot[YOUR_BOT_TOKEN]/setWebhook'
-```
-这样，就将你的服务器连接上你的 telegram bot 了，试着给bot发送个 `/help`，如果它回复给你使用说明，那就配置成功了。
-
-## 补充说明
-在`config.js`文件里，还有另外的几个参数：
-```
-// 单次请求多少毫秒未响应以后超时（基准值，若连续超时则下次调整为上次的2倍）
+// 單次請求多少毫秒未響應以後超時（基準值，若連續超時則下次調整為上次的2倍）
 const TIMEOUT_BASE = 7000
 
-// 最大超时设置，比如某次请求，第一次7s超时，第二次14s，第三次28s，第四次56s，第五次不是112s而是60s，后续同理
+// 最大超時設置，比如某次請求，第一次7s超時，第二次14s，第三次28s，第四次56s，第五次不是112s而是60s，後續同理
 const TIMEOUT_MAX = 60000
 
-const LOG_DELAY = 5000 // 日志输出时间间隔，单位毫秒
-const PAGE_SIZE = 1000 // 每次网络请求读取目录下的文件数，数值越大，越有可能超时，不得超过1000
+const LOG_DELAY = 5000 // 日志輸出時間間隔，單位毫秒
+const PAGE_SIZE = 1000 // 每次網絡請求讀取目錄下的文件數，數值越大，越有可能超時，不得超過1000
 
-const RETRY_LIMIT = 7 // 如果某次请求失败，允许其重试的最大次数
-const PARALLEL_LIMIT = 20 // 网络请求的并行数量，可根据网络环境调整
+const RETRY_LIMIT = 7 // 如果某次請求失敗，允許其重試的最大次數
+const PARALLEL_LIMIT = 20 // 網絡請求的並行數量，可根據網絡環境調整
 
-const DEFAULT_TARGET = '' // 必填，拷贝默认目的地ID，如果不指定target，则会拷贝到此处，建议填写团队盘ID，注意要用英文引号包裹
+const DEFAULT_TARGET = '' // 必填，拷貝默認目的地ID，如果不指定target，則會拷貝到此處，建議填寫團隊盤ID，注意要用英文引號包裹
 ```
-读者可根据各自情况进行调整
+讀者可根據各自情況進行調整
 
-## 注意事项
-程序的原理是调用了[google drive官方接口](https://developers.google.com/drive/api/v3/reference/files/list)，递归获取目标文件夹下所有文件及其子文件夹信息，粗略来讲，某个目录下包含多少个文件夹，就至少需要这么多次请求才能统计完成。
+## 注意事項
+程序的原理是調用了[google drive官方接口](https://developers.google.com/drive/api/v3/reference/files/list)，遞歸獲取目標文件夾下所有文件及其子文件夾信息，粗略來講，某個目錄下包含多少個文件夾，就至少需要這麽多次請求才能統計完成。
 
-目前尚不知道google是否会对接口做频率限制，也不知道会不会影响google账号本身的安全。
+目前尚不知道google是否會對接口做頻率限制，也不知道會不會影響google賬號本身的安全。
 
-**请勿滥用，后果自负**
+**請勿濫用，後果自負**

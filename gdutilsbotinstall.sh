@@ -109,16 +109,16 @@ while [[ "${#YOUR_GOOGLE_TEAM_DRIVE_ID}" != 19 ]]; do
 done
 
 cd ~ &&
-    sed -i "s/bot_token/$YOUR_BOT_TOKEN/g" ./gd-utils/config.js &&
-    sed -i "s/your_tg_username/$YOUR_TELEGRAM_ID/g" ./gd-utils/config.js && 
-    sed -i "s/DEFAULT_TARGET = ''/DEFAULT_TARGET = '$YOUR_GOOGLE_TEAM_DRIVE_ID'/g" ./gd-utils/config.js
+    sed -i "s/bot_token/$YOUR_BOT_TOKEN/g" ./gd-utils-cht/config.js &&
+    sed -i "s/your_tg_username/$YOUR_TELEGRAM_ID/g" ./gd-utils-cht/config.js && 
+    sed -i "s/DEFAULT_TARGET = ''/DEFAULT_TARGET = '$YOUR_GOOGLE_TEAM_DRIVE_ID'/g" ./gd-utils-cht/config.js
 echo -e "\033[1;32m----------------------------------------------------------\033[0m"
 
 echo -e "\033[1;32m“进程守护程序pm2”开始安装......\033[0m"
-cd /root/gd-utils &&
+cd /root/gd-utils-cht &&
     npm i pm2 -g && pm2 l
 echo -e "\033[1;32m启动守护进程......\033[0m"
-pm2 start server.js
+pm2 start server.js --node-args="--max-old-space-size=4096"
 echo -e "\033[1;32m----------------------------------------------------------\033[0m"
 
 echo -e "\033[1;32m“nginx”开始安装......\033[0m"
@@ -131,10 +131,18 @@ echo -e "\033[1;32m“nginx”起一个web服务......\033[0m"
 
 cd $nginx_conf
 echo "server {
-listen 80;
-server_name $YOUR_DOMAIN_NAME;
-location / {
-    proxy_pass http://127.0.0.1:23333/;
+    listen 80;
+    server_name $YOUR_DOMAIN_NAME;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    ssl on;
+    ssl_certificate    /etc/ssl/certificate.crt;
+    ssl_certificate_key    /etc/ssl/private.key;
+    server_name $YOUR_DOMAIN_NAME;
+    location / {
+         proxy_pass http://127.0.0.1:23333/;
     }
 }" >${nginx_conf}gdutilsbot.conf &&
     $rm_nginx_default

@@ -8,23 +8,37 @@ const HttpsProxyAgent = require('https-proxy-agent')
 const { GoogleToken } = require('gtoken')
 const handle_exit = require('signal-exit')
 
-const { AUTH, RETRY_LIMIT, PARALLEL_LIMIT, TIMEOUT_BASE, TIMEOUT_MAX, LOG_DELAY, PAGE_SIZE, DEFAULT_TARGET } = require('../config')
+const { AUTH, RETRY_LIMIT, PARALLEL_LIMIT, TIMEOUT_BASE, TIMEOUT_MAX, LOG_DELAY, PAGE_SIZE, DEFAULT_TARGET, SA_PATH } = require('../config')
 const { db } = require('../db')
 const { make_table, make_tg_table, make_html, summary } = require('./summary')
 
+const FILE_EXCEED_MSG = '您的小組雲端硬碟文件數量已超過限制(40萬)，停止複製'
 const FOLDER_TYPE = 'application/vnd.google-apps.folder'
 const { https_proxy } = process.env
 const axins = axios.create(https_proxy ? { httpsAgent: new HttpsProxyAgent(https_proxy) } : {})
 
-const SA_FILES = fs.readdirSync(path.join(__dirname, '../sa')).filter(v => v.endsWith('.json'))
+const SA_BATCH_SIZE = 1000
+const SA_FILES = fs.readdirSync(path.join(__dirname, SA_PATH)).filter(v => v.endsWith('.json'))
+SA_FILES.flag = 0
+let SA_TOKENS = get_sa_batch()
 
-let SA_TOKENS = SA_FILES.map(filename => {
-  const gtoken = new GoogleToken({
-    keyFile: path.join(__dirname, '../sa', filename),
-    scope: ['https://www.googleapis.com/auth/drive']
+setInterval(() => {
+  SA_FILES.flag = 0
+  SA_TOKENS = get_sa_batch()
+}, 1000 * 3600 * 12)
+
+function get_sa_batch () {
+  const new_flag = SA_FILES.flag + SA_BATCH_SIZE
+  const files = SA_FILES.slice(SA_FILES.flag, new_flag)
+  SA_FILES.flag = new_flag
+  return files.map(filename => {
+    const gtoken = new GoogleToken({
+      keyFile: path.join(__dirname, '../sa', filename),
+      scope: ['https://www.googleapis.com/auth/drive']
+    })
+    return { gtoken, expires: 0 }
   })
-  return { gtoken, expires: 0 }
-})
+}
 
 handle_exit(() => {
   // console.log('handle_exit running')
@@ -38,11 +52,13 @@ handle_exit(() => {
 async function gen_count_body ({ fid, type, update, service_account }) {
   async function update_info () {
     const info = await walk_and_save({ fid, update, service_account }) // 这一步已经将fid记录存入数据库中了
-    const { summary } = db.prepare('SELECT summary from gd WHERE fid=?').get(fid)
-    return [info, JSON.parse(summary)]
+    const row = db.prepare('SELECT summary from gd WHERE fid=?').get(fid)
+    if (!row) return []
+    return [info, JSON.parse(row.summary)]
   }
 
   function render_smy (smy, type) {
+    if (!smy) return
     if (['html', 'curl', 'tg'].includes(type)) {
       smy = (typeof smy === 'object') ? smy : JSON.parse(smy)
       const type_func = {
@@ -66,7 +82,7 @@ async function gen_count_body ({ fid, type, update, service_account }) {
     if (!info) { // 说明上次统计过程中断了
       [info] = await update_info()
     }
-    return JSON.stringify(info)
+    return info && JSON.stringify(info)
   }
   if (smy) return render_smy(smy, type)
   if (record && record.summary) return render_smy(record.summary, type)
@@ -86,7 +102,7 @@ async function count ({ fid, update, sort, type, output, not_teamdrive, service_
   if (!update) {
     const info = get_all_by_fid(fid)
     if (info) {
-      console.log('找到本地缓存数据，缓存时间：', dayjs(info.mtime).format('YYYY-MM-DD HH:mm:ss'))
+      console.log('找到本地快取資料，快取時間：', dayjs(info.mtime).format('YYYY-MM-DD HH:mm:ss'))
       const out_str = get_out_str({ info, type, sort })
       if (output) return fs.writeFileSync(output, out_str)
       return console.log(out_str)
@@ -154,7 +170,7 @@ async function walk_and_save ({ fid, not_teamdrive, update, service_account }) {
 
   const loop = setInterval(() => {
     const now = dayjs().format('HH:mm:ss')
-    const message = `${now} | 已获取对象 ${result.length} | 排队等候的网络请求 ${limit.pendingCount}`
+    const message = `${now} | 已獲取對象 ${result.length} | 網路請求 進行中${limit.activeCount}/排隊中${limit.pendingCount}`
     print_progress(message)
   }, 1000)
 
@@ -185,8 +201,8 @@ async function walk_and_save ({ fid, not_teamdrive, update, service_account }) {
   } catch (e) {
     console.error(e)
   }
-  console.log('\n信息获取完毕')
-  not_finished.length ? console.log('未读取完毕的目录ID：', JSON.stringify(not_finished)) : console.log('所有目录读取完毕')
+  console.log('\n資訊獲取完畢')
+  not_finished.length ? console.log('未讀取完畢的目錄ID：', JSON.stringify(not_finished)) : console.log('所有目錄讀取完畢')
   clearInterval(loop)
   const smy = summary(result)
   db.prepare('UPDATE gd SET summary=?, mtime=? WHERE fid=?').run(JSON.stringify(smy), Date.now(), fid)
@@ -217,7 +233,8 @@ async function ls_folder ({ fid, not_teamdrive, service_account }) {
   params.orderBy = 'folder,name desc'
   params.fields = 'nextPageToken, files(id, name, mimeType, size, md5Checksum)'
   params.pageSize = Math.min(PAGE_SIZE, 1000)
-  const use_sa = (fid !== 'root') && (service_account || !not_teamdrive) // 不带参数默认使用sa
+  // const use_sa = (fid !== 'root') && (service_account || !not_teamdrive) // 不带参数默认使用sa
+  const use_sa = (fid !== 'root') && service_account
   const headers = await gen_headers(use_sa)
   do {
     if (pageToken) params.pageToken = pageToken
@@ -236,7 +253,7 @@ async function ls_folder ({ fid, not_teamdrive, service_account }) {
       }
     }
     if (!data) {
-      console.error('读取目录未完成(部分读取), 参数:', params)
+      console.error('讀取目錄未完成(部分讀取), 參數:', params)
       files.not_finished = true
       return files
     }
@@ -248,7 +265,7 @@ async function ls_folder ({ fid, not_teamdrive, service_account }) {
 }
 
 async function gen_headers (use_sa) {
-  use_sa = use_sa && SA_TOKENS.length
+  // use_sa = use_sa && SA_TOKENS.length
   const access_token = use_sa ? (await get_sa_token()).access_token : (await get_access_token())
   return { authorization: 'Bearer ' + access_token }
 }
@@ -276,37 +293,30 @@ async function get_access_token () {
   return data.access_token
 }
 
+// get_sa_token().catch(console.error)
 async function get_sa_token () {
-  let tk
+  if (!SA_TOKENS.length) SA_TOKENS = get_sa_batch()
   while (SA_TOKENS.length) {
-    tk = get_random_element(SA_TOKENS)
+    const tk = get_random_element(SA_TOKENS)
     try {
       return await real_get_sa_token(tk)
     } catch (e) {
       console.log(e)
       SA_TOKENS = SA_TOKENS.filter(v => v.gtoken !== tk.gtoken)
+      if (!SA_TOKENS.length) SA_TOKENS = get_sa_batch()
     }
   }
-  throw new Error('没有可用的SA帐号')
+  throw new Error('沒有可用的SA帳號')
 }
 
-function real_get_sa_token (el) {
+async function real_get_sa_token (el) {
   const { value, expires, gtoken } = el
   // 把gtoken传递出去的原因是当某账号流量用尽时可以依此过滤
   if (Date.now() < expires) return { access_token: value, gtoken }
-  return new Promise((resolve, reject) => {
-    gtoken.getToken((err, tokens) => {
-      if (err) {
-        reject(err)
-      } else {
-        // console.log('got sa token', tokens)
-        const { access_token, expires_in } = tokens
-        el.value = access_token
-        el.expires = Date.now() + 1000 * expires_in
-        resolve({ access_token, gtoken })
-      }
-    })
-  })
+  const { access_token, expires_in } = await gtoken.getToken({ forceRefresh: true })
+  el.value = access_token
+  el.expires = Date.now() + 1000 * (expires_in - 60 * 5) // 提前5分钟判定为过期
+  return { access_token, gtoken }
 }
 
 function get_random_element (arr) {
@@ -323,7 +333,7 @@ function validate_fid (fid) {
   return fid.match(reg)
 }
 
-async function create_folder (name, parent, use_sa) {
+async function create_folder (name, parent, use_sa, limit) {
   let url = `https://www.googleapis.com/drive/v3/files`
   const params = { supportsAllDrives: true }
   url += '?' + params_to_query(params)
@@ -333,18 +343,34 @@ async function create_folder (name, parent, use_sa) {
     parents: [parent]
   }
   let retry = 0
-  let data
-  while (!data && (retry < RETRY_LIMIT)) {
+  let err_message
+  while (retry < RETRY_LIMIT) {
     try {
       const headers = await gen_headers(use_sa)
-      data = (await axins.post(url, post_data, { headers })).data
+      return (await axins.post(url, post_data, { headers })).data
     } catch (err) {
+      err_message = err.message
       retry++
       handle_error(err)
-      console.log('创建目录重试中：', name, '重试次数：', retry)
+      const data = err && err.response && err.response.data
+      const message = data && data.error && data.error.message
+      if (message && message.toLowerCase().includes('file limit')) {
+        if (limit) limit.clearQueue()
+        throw new Error(FILE_EXCEED_MSG)
+      }
+      console.log('創建目錄重試中：', name, '重試次數：', retry)
     }
   }
-  return data
+  throw new Error(err_message + ' 目錄名：' + name)
+}
+
+async function get_name_by_id (fid) {
+  try {
+    const { name } = await get_info_by_id(fid, true)
+    return name
+  } catch (e) {
+    return fid
+  }
 }
 
 async function get_info_by_id (fid, use_sa) {
@@ -353,7 +379,7 @@ async function get_info_by_id (fid, use_sa) {
     includeItemsFromAllDrives: true,
     supportsAllDrives: true,
     corpora: 'allDrives',
-    fields: 'id,name,owners'
+    fields: 'id,name'
   }
   url += '?' + params_to_query(params)
   const headers = await gen_headers(use_sa)
@@ -365,10 +391,10 @@ async function user_choose () {
   const answer = await prompts({
     type: 'select',
     name: 'value',
-    message: '检测到上次的复制记录，是否继续？',
+    message: '檢測到上次的複製紀錄，是否繼續？',
     choices: [
-      { title: 'Continue', description: '从上次中断的地方继续', value: 'continue' },
-      { title: 'Restart', description: '无视已存在的记录，重新复制', value: 'restart' },
+      { title: 'Continue', description: '從上次中斷的地方繼續', value: 'continue' },
+      { title: 'Restart', description: '無視已存在的紀錄，重新複製', value: 'restart' },
       { title: 'Exit', description: '直接退出', value: 'exit' }
     ],
     initial: 0
@@ -376,25 +402,26 @@ async function user_choose () {
   return answer.value
 }
 
-async function copy ({ source, target, name, min_size, update, not_teamdrive, service_account, is_server }) {
+async function copy ({ source, target, name, min_size, update, not_teamdrive, service_account, dncnr, is_server }) {
   target = target || DEFAULT_TARGET
-  if (!target) throw new Error('目标位置不能为空')
+  if (!target) throw new Error('目標位置不能為空')
 
   const record = db.prepare('select id, status from task where source=? and target=?').get(source, target)
-  if (record && record.status === 'copying') return console.log('已有相同源和目的地的任务正在运行，强制退出')
+  if (record && record.status === 'copying') return console.log('已有相同來源和目的地的任務正在進行，強制退出')
 
   try {
-    return await real_copy({ source, target, name, min_size, update, not_teamdrive, service_account, is_server })
+    return await real_copy({ source, target, name, min_size, update, dncnr, not_teamdrive, service_account, is_server })
   } catch (err) {
-    console.error('复制文件夹出错', err)
+    console.error('複製資料夾出錯', err)
     const record = db.prepare('select id, status from task where source=? and target=?').get(source, target)
     if (record) db.prepare('update task set status=? where id=?').run('error', record.id)
   }
 }
 
 // 待解决：如果用户手动ctrl+c中断进程，那么已经发出的请求，就算完成了也不会记录到本地数据库中，所以可能产生重复文件（夹）
-async function real_copy ({ source, target, name, min_size, update, not_teamdrive, service_account, is_server }) {
+async function real_copy ({ source, target, name, min_size, update, dncnr, not_teamdrive, service_account, is_server }) {
   async function get_new_root () {
+    if (dncnr) return { id: target }
     if (name) {
       return create_folder(name, target, service_account)
     } else {
@@ -405,14 +432,14 @@ async function real_copy ({ source, target, name, min_size, update, not_teamdriv
 
   const record = db.prepare('select * from task where source=? and target=?').get(source, target)
   if (record) {
+    const copied = db.prepare('select fileid from copied where taskid=?').all(record.id).map(v => v.fileid)
     const choice = is_server ? 'continue' : await user_choose()
     if (choice === 'exit') {
       return console.log('退出程序')
     } else if (choice === 'continue') {
-      let { copied, mapping } = record
-      const copied_ids = {}
+      let { mapping } = record
       const old_mapping = {}
-      copied = copied.trim().split('\n')
+      const copied_ids = {}
       copied.forEach(id => copied_ids[id] = true)
       mapping = mapping.trim().split('\n').map(line => line.split(' '))
       const root = mapping[0][1]
@@ -421,9 +448,9 @@ async function real_copy ({ source, target, name, min_size, update, not_teamdriv
       const arr = await walk_and_save({ fid: source, update, not_teamdrive, service_account })
       let files = arr.filter(v => v.mimeType !== FOLDER_TYPE).filter(v => !copied_ids[v.id])
       if (min_size) files = files.filter(v => v.size >= min_size)
-      const folders = arr.filter(v => v.mimeType === FOLDER_TYPE).filter(v => !old_mapping[v.id])
-      console.log('待复制的目录数：', folders.length)
-      console.log('待复制的文件数：', files.length)
+      const folders = arr.filter(v => v.mimeType === FOLDER_TYPE)
+      console.log('待複製的目錄數：', folders.length)
+      console.log('待複製的檔案數：', files.length)
       const all_mapping = await create_folders({
         old_mapping,
         source,
@@ -432,21 +459,22 @@ async function real_copy ({ source, target, name, min_size, update, not_teamdriv
         root,
         task_id: record.id
       })
-      await copy_files({ files, mapping: all_mapping, root, task_id: record.id })
+      await copy_files({ files, service_account, root, mapping: all_mapping, task_id: record.id })
       db.prepare('update task set status=?, ftime=? where id=?').run('finished', Date.now(), record.id)
-      return { id: root }
+      return { id: root, task_id: record.id }
     } else if (choice === 'restart') {
       const new_root = await get_new_root()
-      if (!new_root) throw new Error('创建目录失败，请检查您的帐号是否有相应的权限')
       const root_mapping = source + ' ' + new_root.id + '\n'
-      db.prepare('update task set status=?, copied=?, mapping=? where id=?')
-        .run('copying', '', root_mapping, record.id)
-      const arr = await walk_and_save({ fid: source, update: true, not_teamdrive, service_account })
+      db.prepare('update task set status=?, mapping=? where id=?').run('copying', root_mapping, record.id)
+      db.prepare('delete from copied where taskid=?').run(record.id)
+      // const arr = await walk_and_save({ fid: source, update: true, not_teamdrive, service_account })
+      const arr = await walk_and_save({ fid: source, update, not_teamdrive, service_account })
+
       let files = arr.filter(v => v.mimeType !== FOLDER_TYPE)
       if (min_size) files = files.filter(v => v.size >= min_size)
       const folders = arr.filter(v => v.mimeType === FOLDER_TYPE)
-      console.log('待复制的目录数：', folders.length)
-      console.log('待复制的文件数：', files.length)
+      console.log('待複製的目錄數：', folders.length)
+      console.log('待複製的檔案數：', files.length)
       const mapping = await create_folders({
         source,
         folders,
@@ -454,24 +482,23 @@ async function real_copy ({ source, target, name, min_size, update, not_teamdriv
         root: new_root.id,
         task_id: record.id
       })
-      await copy_files({ files, mapping, root: new_root.id, task_id: record.id })
+      await copy_files({ files, mapping, service_account, root: new_root.id, task_id: record.id })
       db.prepare('update task set status=?, ftime=? where id=?').run('finished', Date.now(), record.id)
-      return new_root
+      return { id: new_root.id, task_id: record.id }
     } else {
       // ctrl+c 退出
       return console.log('退出程序')
     }
   } else {
     const new_root = await get_new_root()
-    if (!new_root) throw new Error('创建目录失败，请检查您的帐号是否有相应的权限')
     const root_mapping = source + ' ' + new_root.id + '\n'
     const { lastInsertRowid } = db.prepare('insert into task (source, target, status, mapping, ctime) values (?, ?, ?, ?, ?)').run(source, target, 'copying', root_mapping, Date.now())
     const arr = await walk_and_save({ fid: source, update, not_teamdrive, service_account })
     let files = arr.filter(v => v.mimeType !== FOLDER_TYPE)
     if (min_size) files = files.filter(v => v.size >= min_size)
     const folders = arr.filter(v => v.mimeType === FOLDER_TYPE)
-    console.log('待复制的目录数：', folders.length)
-    console.log('待复制的文件数：', files.length)
+    console.log('待複製的目錄數：', folders.length)
+    console.log('待複製的檔案數：', files.length)
     const mapping = await create_folders({
       source,
       folders,
@@ -479,39 +506,33 @@ async function real_copy ({ source, target, name, min_size, update, not_teamdriv
       root: new_root.id,
       task_id: lastInsertRowid
     })
-    await copy_files({ files, mapping, root: new_root.id, task_id: lastInsertRowid })
+    await copy_files({ files, mapping, service_account, root: new_root.id, task_id: lastInsertRowid })
     db.prepare('update task set status=?, ftime=? where id=?').run('finished', Date.now(), lastInsertRowid)
-    return new_root
+    return { id: new_root.id, task_id: lastInsertRowid }
   }
 }
 
-async function copy_files ({ files, mapping, root, task_id }) {
-  console.log('\n开始复制文件，总数：', files.length)
+async function copy_files ({ files, mapping, service_account, root, task_id }) {
+  console.log('\n開始複製文件，總數：', files.length)
   const limit = pLimit(PARALLEL_LIMIT)
   let count = 0
   const loop = setInterval(() => {
     const now = dayjs().format('HH:mm:ss')
-    const message = `${now} | 已复制文件数 ${count} | 排队等候的网络请求 ${limit.pendingCount}`
+    const message = `${now} | 已複製的檔案數 ${count} | 網路請求 進行中${limit.activeCount}/排隊中${limit.pendingCount}`
     print_progress(message)
   }, 1000)
-  await Promise.all(files.map(async file => {
-    try {
-      const { id, parent } = file
-      const target = mapping[parent] || root
-      const new_file = await limit(() => copy_file(id, target))
-      if (new_file) {
-        db.prepare('update task set status=?, copied = copied || ? where id=?')
-          .run('copying', id + '\n', task_id)
-      }
+  return Promise.all(files.map(async file => {
+    const { id, parent } = file
+    const target = mapping[parent] || root
+    const new_file = await limit(() => copy_file(id, target, service_account, limit, task_id))
+    if (new_file) {
       count++
-    } catch (e) {
-      console.error(e)
+      db.prepare('INSERT INTO copied (taskid, fileid) VALUES (?, ?)').run(task_id, id)
     }
-  }))
-  clearInterval(loop)
+  })).finally(() => clearInterval(loop))
 }
 
-async function copy_file (id, parent) {
+async function copy_file (id, parent, use_sa, limit, task_id) {
   let url = `https://www.googleapis.com/drive/v3/files/${id}/copy`
   let params = { supportsAllDrives: true }
   url += '?' + params_to_query(params)
@@ -519,7 +540,7 @@ async function copy_file (id, parent) {
   let retry = 0
   while (retry < RETRY_LIMIT) {
     let gtoken
-    if (SA_TOKENS.length) { // 如果有sa文件则优先使用
+    if (use_sa) {
       const temp = await get_sa_token()
       gtoken = temp.gtoken
       config.headers = { authorization: 'Bearer ' + temp.access_token }
@@ -534,16 +555,24 @@ async function copy_file (id, parent) {
       handle_error(err)
       const data = err && err.response && err.response.data
       const message = data && data.error && data.error.message
-      if (message && message.toLowerCase().includes('rate limit')) {
+      if (message && message.toLowerCase().includes('file limit')) {
+        if (limit) limit.clearQueue()
+        if (task_id) db.prepare('update task set status=? where id=?').run('error', task_id)
+        throw new Error('您的小組雲端硬碟文件數已超限，停止複製')
+      }
+      if (use_sa && message && message.toLowerCase().includes('rate limit')) {
         SA_TOKENS = SA_TOKENS.filter(v => v.gtoken !== gtoken)
-        console.log('此帐号触发使用限额，剩余可用service account帐号数量：', SA_TOKENS.length)
+        if (!SA_TOKENS.length) SA_TOKENS = get_sa_batch()
+        console.log('此帳號觸發使用限額，剩餘可用service account帳號數量：', SA_TOKENS.length)
       }
     }
   }
-  if (!SA_TOKENS.length) {
-    throw new Error('所有SA帐号流量已用完')
+  if (use_sa && !SA_TOKENS.length) {
+    if (limit) limit.clearQueue()
+    if (task_id) db.prepare('update task set status=? where id=?').run('error', task_id)
+    throw new Error('所有SA帳號流量已用完')
   } else {
-    console.warn('复制文件失败，文件id: ' + id)
+    console.warn('複製檔案失敗，檔案id: ' + id)
   }
 }
 
@@ -553,33 +582,38 @@ async function create_folders ({ source, old_mapping, folders, root, task_id, se
   mapping[source] = root
   if (!folders.length) return mapping
 
-  console.log('开始复制文件夹，总数：', folders.length)
+  const missed_folders = folders.filter(v => !mapping[v.id])
+  console.log('開始複製資料夾，總數：', missed_folders.length)
   const limit = pLimit(PARALLEL_LIMIT)
   let count = 0
   let same_levels = folders.filter(v => v.parent === folders[0].parent)
 
   const loop = setInterval(() => {
     const now = dayjs().format('HH:mm:ss')
-    const message = `${now} | 已创建目录数 ${count} | 排队等候的网络请求 ${limit.pendingCount}`
+    const message = `${now} | 已創建目錄 ${count} | 網路請求 進行中${limit.activeCount}/排隊中${limit.pendingCount}`
     print_progress(message)
   }, 1000)
 
   while (same_levels.length) {
-    await Promise.all(same_levels.map(async v => {
+    const same_levels_missed = same_levels.filter(v => !mapping[v.id])
+    await Promise.all(same_levels_missed.map(async v => {
       try {
         const { name, id, parent } = v
         const target = mapping[parent] || root
-        const new_folder = await limit(() => create_folder(name, target, service_account))
-        if (!new_folder) throw new Error(name + '创建失败')
+        const new_folder = await limit(() => create_folder(name, target, service_account, limit))
         count++
         mapping[id] = new_folder.id
         const mapping_record = id + ' ' + new_folder.id + '\n'
-        db.prepare('update task set status=?, mapping = mapping || ? where id=?').run('copying', mapping_record, task_id)
+        db.prepare('update task set mapping = mapping || ? where id=?').run(mapping_record, task_id)
       } catch (e) {
-        console.error('创建目录出错:', v, e)
+        if (e.message === FILE_EXCEED_MSG) {
+          clearInterval(loop)
+          throw new Error(FILE_EXCEED_MSG)
+        }
+        console.error('創建目錄出錯:', e.message)
       }
     }))
-    folders = folders.filter(v => !mapping[v.id])
+    // folders = folders.filter(v => !mapping[v.id])
     same_levels = [].concat(...same_levels.map(v => folders.filter(vv => vv.parent === v.id)))
   }
 
@@ -627,17 +661,24 @@ async function confirm_dedupe ({ file_number, folder_number }) {
   const answer = await prompts({
     type: 'select',
     name: 'value',
-    message: `检测到重复文件${file_number}个，重复目录${folder_number}个，是否删除？`,
+    message: `檢測到同位置下重複文件${file_number}个，重複空目錄${folder_number}個，是否刪除？`,
     choices: [
-      { title: 'Yes', description: '确认删除', value: 'yes' },
-      { title: 'No', description: '先不删除', value: 'no' }
+      { title: 'Yes', description: '確認刪除', value: 'yes' },
+      { title: 'No', description: '先不刪除', value: 'no' }
     ],
     initial: 0
   })
   return answer.value
 }
 
-// 可以删除文件或文件夹，似乎不会进入回收站
+// 将文件或文件夹移入回收站，需要 sa 为 content manager 权限及以上
+async function trash_file ({ fid, service_account }) {
+  const url = `https://www.googleapis.com/drive/v3/files/${fid}?supportsAllDrives=true`
+  const headers = await gen_headers(service_account)
+  return axins.patch(url, { trashed: true }, { headers })
+}
+
+// 直接删除文件或文件夹，不会进入回收站，需要 sa 为 manager 权限
 async function rm_file ({ fid, service_account }) {
   const headers = await gen_headers(service_account)
   let retry = 0
@@ -648,7 +689,7 @@ async function rm_file ({ fid, service_account }) {
     } catch (err) {
       retry++
       handle_error(err)
-      console.log('删除重试中，重试次数', retry)
+      console.log('刪除重試中，重試次數', retry)
     }
   }
 }
@@ -658,7 +699,7 @@ async function dedupe ({ fid, update, service_account }) {
   if (!update) {
     const info = get_all_by_fid(fid)
     if (info) {
-      console.log('找到本地缓存数据，缓存时间：', dayjs(info.mtime).format('YYYY-MM-DD HH:mm:ss'))
+      console.log('找到本地快取資料，快取時間：', dayjs(info.mtime).format('YYYY-MM-DD HH:mm:ss'))
       arr = info
     }
   }
@@ -677,16 +718,16 @@ async function dedupe ({ fid, update, service_account }) {
   let file_count = 0
   await Promise.all(dupes.map(async v => {
     try {
-      await limit(() => rm_file({ fid: v.id, service_account }))
+      await limit(() => trash_file({ fid: v.id, service_account }))
       if (v.mimeType === FOLDER_TYPE) {
-        console.log('成功删除文件夹', v.name)
+        console.log('成功刪除資料夾', v.name)
         folder_count++
       } else {
-        console.log('成功删除文件', v.name)
+        console.log('成功刪除檔案', v.name)
         file_count++
       }
     } catch (e) {
-      console.log('删除失败', e.message)
+      console.log('刪除失敗', e.message)
     }
   }))
   return { file_count, folder_count }
@@ -704,10 +745,10 @@ function handle_error (err) {
 function print_progress (msg) {
   if (process.stdout.cursorTo) {
     process.stdout.cursorTo(0)
-    process.stdout.write(msg)
+    process.stdout.write(msg + ' ')
   } else {
     console.log(msg)
   }
 }
 
-module.exports = { ls_folder, count, validate_fid, copy, dedupe, copy_file, gen_count_body, real_copy }
+module.exports = { ls_folder, count, validate_fid, copy, dedupe, copy_file, gen_count_body, real_copy, get_name_by_id }

@@ -27,3 +27,19 @@ CREATE UNIQUE INDEX "task_source_target" ON "task" (
   "source",
   "target"
 );
+
+CREATE TABLE "copied" (
+  "taskid"  INTEGER,
+  "fileid"  TEXT
+);
+
+CREATE INDEX "copied_taskid" ON "copied" ("taskid");
+
+CREATE TABLE "bookmark" (
+  "alias"  TEXT,
+  "target"  TEXT
+);
+
+CREATE UNIQUE INDEX "bookmark_alias" ON "bookmark" (
+  "alias"
+);
