@@ -5,7 +5,7 @@ const HttpsProxyAgent = require('https-proxy-agent')
 
 const { db } = require('../db')
 const { gen_count_body, validate_fid, real_copy, get_name_by_id } = require('./gd')
-const { AUTH, DEFAULT_TARGET, USE_PERSONAL_AUTH } = require('../config')
+const { AUTH, DEFAULT_TARGET, USE_PERSONAL_AUTH, BUTTON_LEVEL } = require('../config')
 const { tg_token } = AUTH
 const gen_link = (fid, text) => `<a href="https://drive.google.com/drive/folders/${fid}">${text || fid}</a>`
 
