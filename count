@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 
 const { argv } = require('yargs')
-  .usage('用法: ./$0 <目录ID> [options]')
-  .example('./$0 1ULY8ISgWSOVc0UrzejykVgXfVL_I4r75', '获取 https://drive.google.com/drive/folders/1ULY8ISgWSOVc0UrzejykVgXfVL_I4r75 内包含的的所有文件的统计信息')
-  .example('./$0 root -s size -t html -o out.html', '获取个人盘根目录统计信息，结果以HTML表格输出，根据总大小逆序排列，保存到本目录下的out.html文件中（不存在则新建，存在则覆盖）')
-  .example('./$0 root -s name -t json -o out.json', '获取个人盘根目录统计信息，结果以JSON格式输出，根据文件扩展名排序，保存到本目录下的out.json文件中')
-  .example('./$0 root -t all -o all.json', '获取个人盘根目录统计信息，将所有文件信息（包括文件夹）以JSON格式输出，保存到本目录下的all.json文件中')
+  .usage('用法: ./$0 <目錄ID> [options]')
+  .example('./$0 1ULY8ISgWSOVc0UrzejykVgXfVL_I4r75', '獲取 https://drive.google.com/drive/folders/1ULY8ISgWSOVc0UrzejykVgXfVL_I4r75 内包含的所有文件的統計資訊')
+  .example('./$0 root -s size -t html -o out.html', '獲取個人空間根目錄統計資訊，結果以HTML表格輸出，根據總大小降冪排列，保存到本目錄下的out.html文件中（不存在則新建，存在的覆蓋）')
+  .example('./$0 root -s name -t json -o out.json', '獲取個人空間根目錄統計資訊，結果以JSON格式輸出，根據文件扩展名排序，保存到本目录下的out.json文件中')
+  .example('./$0 root -t all -o all.json', '獲取個人空間根目錄統計資訊，將所有文件資訊（包括資料夾）以JSON格式輸出，保存到本目錄下的all.json文件中')
   .alias('u', 'update')
-  .describe('u', '强制从线上获取信息(无视是否存在本地缓存)')
+  .describe('u', '強制從線上獲取資訊(不論是否存在本地快取)')
   .alias('N', 'not_teamdrive')
-  .describe('N', '如果不是团队盘链接，可以加上此参数以提高接口查询效率，降低延迟。如果要统计的是个人盘且./sa目录下的service account没有相关权限，请确保加上此参数以使用个人的auth信息进行查询')
+  .describe('N', '如果不是小組雲端硬碟連結，可以加上此参數以提高接口查詢效率，降低延遲。如果要統計的是帳號下之個人空間，且./sa目錄下的service account沒有相關權限，請加上此參數以使用個人的auth身份進行查詢')
   .alias('S', 'service_account')
-  .describe('S', '指定使用service account进行统计，前提是必须在sa目录下放置SA json文件')
+  .describe('S', '指定使用service account進行統計，前提是必須在sa路徑下放置SA json文件')
   .alias('s', 'sort')
-  .describe('s', '统计结果排序方法，可选值 name 或 size，不填则默认根据文件数量逆序排列')
+  .describe('s', '統計結果排序方法，可選值如下： name 或 size，不填則預設根據文件數量降冪排列')
   .alias('t', 'type')
-  .describe('t', '统计结果输出类型，可选值 html/json/all，all表示输出所有文件json数据，最好搭配 -o 使用。不填则默认输出命令行表格')
+  .describe('t', '統計結果輸出類型，可選值如下： html/json/all，all表示輸出所有文件json數據，最好與 -o 一起使用。不填則預設輸出命令列表格')
   .alias('o', 'output')
-  .describe('o', '统计结果输出文件，适合搭配 -t 使用')
+  .describe('o', '統計結果輸出文件，適合與 -t 一起使用')
   .help('h')
   .alias('h', 'help')
 
@@ -27,5 +27,5 @@ if (validate_fid(fid)) {
   const { update, sort, type, output, not_teamdrive, service_account } = argv
   count({ fid, update, sort, type, output, not_teamdrive, service_account }).catch(console.error)
 } else {
-  console.warn('目录ID缺失或格式错误')
+  console.warn('無目錄ID或格式錯誤')
 }
