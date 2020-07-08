@@ -39,6 +39,11 @@ sourceID可以是共享網址本身，也可以是共享ID。如果命令最后�
 =====================
 /task taskID(選填) | 返回對應任務的進度信息，若不填taskID則返回所有正在運行的任務進度
 若填 all 則返回所有任務列表(歷史紀錄)
+/task | 返回所有正在執行的正在執行的任務詳情
+/task 7 | 返回ID为 7 的任務詳情
+/task all | 返回所有任務紀錄列表
+/task clear | 清除所有狀態為finished的任務紀錄
+/task rm 7 | 刪除編號為 7 的任務紀錄
 =====================
 /bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
 會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
@@ -59,6 +64,32 @@ function send_bm_help (chat_id) {
 /bm unset movie | 刪除此收藏夾
 </pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
+}
+
+function send_task_help (chat_id) {
+  const text = `<pre>/task [action/id] [id] | 查詢或管理任務進度
+範例：
+/task | 返回所有正在執行的正在執行的任務詳情
+/task 7 | 返回ID为 7 的任務詳情
+/task all | 返回所有任務紀錄列表
+/task clear | 清除所有狀態為finished的任務紀錄
+/task rm 7 | 刪除編號為 7 的任務紀錄
+</pre>`
+  return sm({ chat_id, text, parse_mode: 'HTML' })
+}
+
+function clear_tasks (chat_id) {
+  const finished_tasks = db.prepare('select id from task where status=?').all('finished')
+  finished_tasks.forEach(task => rm_task({ task_id: task.id }))
+  sm({ chat_id, text: '已清除所有狀態為finished的任務紀錄' })
+}
+
+function rm_task ({ task_id, chat_id }) {
+  const exist = db.prepare('select id from task where id=?').get(task_id)
+  if (!exist) return sm({ chat_id, text: `不存在编号为 ${task_id} 的任务记录` })
+  db.prepare('delete from task where id=?').run(task_id)
+  db.prepare('delete from copied where taskid=?').run(task_id)
+  if (chat_id) sm({ chat_id, text: `已刪除任務 ${task_id} 紀錄` })
 }
 
 function send_all_bookmarks (chat_id) {
@@ -89,6 +120,11 @@ function unset_bookmark ({ chat_id, alias }) {
 function get_target_by_alias (alias) {
   const record = db.prepare('select target from bookmark where alias=?').get(alias)
   return record && record.target
+}
+
+function get_alias_by_target (target) {
+  const record = db.prepare('select alias from bookmark where target=?').get(target)
+  return record && record.alias
 }
 
 function send_choice ({ fid, chat_id }) {
@@ -212,8 +248,8 @@ async function send_task_info ({ task_id, chat_id }) {
   } catch (e) {
     console.log('fail to send message to tg', e.message)
   }
-  // get_task_info 在task目录数超大时比较吃cpu，如果超1万就不每10秒更新了，以后如果把mapping 也另存一张表可以取消此限制
-  if (!message_id || status !== 'copying' || folder_count > 10000) return
+  // get_task_info 在task目录数超大时比较吃cpu，以后最好把mapping也另存一张表
+  if (!message_id || status !== 'copying') return
   const loop = setInterval(async () => {
     const url = `https://api.telegram.org/bot${tg_token}/editMessageText`
     const { text, status } = await get_task_info(task_id)
@@ -347,4 +383,4 @@ function extract_from_text (text) {
   return m && extract_fid(m[0])
 }
 
-module.exports = { send_count, send_help, sm, extract_fid, reply_cb_query, send_choice, send_task_info, send_all_tasks, tg_copy, extract_from_text, get_target_by_alias, send_bm_help, send_all_bookmarks, set_bookmark, unset_bookmark }
+module.exports = { send_count, send_help, sm, extract_fid, reply_cb_query, send_choice, send_task_info, send_all_tasks, tg_copy, extract_from_text, get_target_by_alias, send_bm_help, send_all_bookmarks, set_bookmark, unset_bookmark, clear_tasks, send_task_help, rm_task }

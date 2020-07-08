@@ -12,8 +12,9 @@ const { AUTH, RETRY_LIMIT, PARALLEL_LIMIT, TIMEOUT_BASE, TIMEOUT_MAX, LOG_DELAY,
 const { db } = require('../db')
 const { make_table, make_tg_table, make_html, summary } = require('./summary')
 
-const FILE_EXCEED_MSG = '您的小組雲端硬碟文件數量已超過限制(40萬)，停止複製'
+const FILE_EXCEED_MSG = '您的小組雲端硬碟文件數量已超過限制(40萬)，停止複製，請將未完成的資料夾移到另一個小組雲端硬碟中，再執行一遍複製指令即可繼斷點續傳'
 const FOLDER_TYPE = 'application/vnd.google-apps.folder'
+const sleep = ms => new Promise((resolve, reject) => setTimeout(resolve, ms))
 const { https_proxy } = process.env
 const axins = axios.create(https_proxy ? { httpsAgent: new HttpsProxyAgent(https_proxy) } : {})
 
@@ -387,7 +388,7 @@ async function get_info_by_id (fid, use_sa) {
     includeItemsFromAllDrives: true,
     supportsAllDrives: true,
     corpora: 'allDrives',
-    fields: 'id,name'
+    fields: 'id, parents'
   }
   url += '?' + params_to_query(params)
   const headers = await gen_headers(use_sa)
@@ -521,25 +522,64 @@ async function real_copy ({ source, target, name, min_size, update, dncnr, not_t
 }
 
 async function copy_files ({ files, mapping, service_account, root, task_id }) {
+  if (!files.length) return
   console.log('\n開始複製文件，總數：', files.length)
-  const limit = pLimit(PARALLEL_LIMIT)
-  let count = 0
   const loop = setInterval(() => {
     const now = dayjs().format('HH:mm:ss')
-    const message = `${now} | 已複製的檔案數 ${count} | 網路請求 進行中${limit.activeCount}/排隊中${limit.pendingCount}`
+    const message = `${now} | 已複製的檔案數 ${count} | 排隊中檔案數${files.length}`
     print_progress(message)
   }, 1000)
-  return Promise.all(files.map(async file => {
+
+  let count = 0
+  let concurrency = 0
+  let err
+  do {
+    if (err) {
+      clearInterval(loop)
+      throw err
+    }
+    if (concurrency > PARALLEL_LIMIT) {
+      await sleep(100)
+      continue
+    }
+    const file = files.shift()
+    if (!file) {
+      await sleep(1000)
+      continue
+    }
+    concurrency++
     const { id, parent } = file
     const target = mapping[parent] || root
-    const new_file = await limit(() => copy_file(id, target, service_account, limit, task_id))
-    if (new_file) {
-      count++
-      db.prepare('INSERT INTO copied (taskid, fileid) VALUES (?, ?)').run(task_id, id)
-    }
-  })).finally(() => clearInterval(loop))
+    copy_file(id, target, service_account, null, task_id).then(new_file => {
+      if (new_file) {
+        count++
+        db.prepare('INSERT INTO copied (taskid, fileid) VALUES (?, ?)').run(task_id, id)
+      }
+    }).catch(e => {
+      err = e
+    }).finally(() => {
+      concurrency--
+    })
+  } while (concurrency)
+  clearInterval(loop)
+  // const limit = pLimit(PARALLEL_LIMIT)
+  // let count = 0
+  // const loop = setInterval(() => {
+  //   const now = dayjs().format('HH:mm:ss')
+  //   const {activeCount, pendingCount} = limit
+  //   const message = `${now} | 已复制文件数 ${count} | 网络请求 进行中${activeCount}/排队中${pendingCount}`
+  //   print_progress(message)
+  // }, 1000)
+  // return Promise.all(files.map(async file => {
+  //   const { id, parent } = file
+  //   const target = mapping[parent] || root
+  //   const new_file = await limit(() => copy_file(id, target, service_account, limit, task_id))
+  //   if (new_file) {
+  //     count++
+  //     db.prepare('INSERT INTO copied (taskid, fileid) VALUES (?, ?)').run(task_id, id)
+  //   }
+  // })).finally(() => clearInterval(loop))
 }
-
 async function copy_file (id, parent, use_sa, limit, task_id) {
   let url = `https://www.googleapis.com/drive/v3/files/${id}/copy`
   let params = { supportsAllDrives: true }
@@ -677,6 +717,22 @@ async function confirm_dedupe ({ file_number, folder_number }) {
     initial: 0
   })
   return answer.value
+}
+
+// 需要sa是源文件夹所在盘的manager
+async function mv_file ({ fid, new_parent, service_account }) {
+  const file = await get_info_by_id(fid)
+  if (!file) return
+  const removeParents = file.parents[0]
+  let url = `https://www.googleapis.com/drive/v3/files/${fid}`
+  const params = {
+    removeParents,
+    supportsAllDrives: true,
+    addParents: new_parent
+  }
+  url += '?' + params_to_query(params)
+  const headers = await gen_headers(service_account)
+  return axins.patch(url, {}, { headers })
 }
 
 // 将文件或文件夹移入回收站，需要 sa 为 content manager 权限及以上
