@@ -24,57 +24,57 @@ async function get_folder_name (fid) {
 
 function send_help (chat_id) {
   const text = `<pre>[使用說明]
-***不支持單檔分享***
-命令 ｜ 說明
-=====================
-/help | 返回本使用說明
-=====================
-/count sourceID [-u] | 返回sourceID的文件統計資訊
-sourceID可以是共享網址本身，也可以是共享ID。如果命令最后加上 -u，則無視快取記錄強制從線上獲取，適合一段時候後才更新完畢的分享連結。
-=====================
-/copy sourceID targetID(選填) [-u] | 將sourceID的文件複製到targetID裡（會新建一個資料夾）
-若無targetID，則會複製到預設位置（config.js中的DEFAULT_TARGET）。
-如果設定了bookmark，那麼targetID也可以是bookmark的標籤名。
-如果命令最後加上 -u，則無視快取記錄強制從線上獲取源資料夾資訊。返回拷貝任務的taskID
-=====================
-/task taskID(選填) | 返回對應任務的進度信息，若不填taskID則返回所有正在運行的任務進度
-若填 all 則返回所有任務列表(歷史紀錄)
-/task | 返回所有正在執行的正在執行的任務詳情
-/task 7 | 返回ID为 7 的任務詳情
-/task all | 返回所有任務紀錄列表
-/task clear | 清除所有狀態為finished的任務紀錄
-/task rm 7 | 刪除編號為 7 的任務紀錄
-=====================
-/bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
-會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
-範例：
-/bm | 返回所有設定的資料夾
-/bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
-/bm unset movie | 刪除此收藏夾
-</pre>`
+  ***不支持單檔分享***
+  命令 ｜ 說明
+  =====================
+  /help | 返回本使用說明
+  =====================
+  /count sourceID [-u] | 返回sourceID的文件統計資訊
+  sourceID可以是共享網址本身，也可以是共享ID。如果命令最后加上 -u，則無視快取記錄強制從線上獲取，適合一段時候後才更新完畢的分享連結。
+  =====================
+  /copy sourceID targetID(選填) [-u] | 將sourceID的文件複製到targetID裡（會新建一個資料夾）
+  若無targetID，則會複製到預設位置（config.js中的DEFAULT_TARGET）。
+  如果設定了bookmark，那麼targetID也可以是bookmark的標籤名。
+  如果命令最後加上 -u，則無視快取記錄強制從線上獲取源資料夾資訊。返回拷貝任務的taskID
+  =====================
+  /task taskID(選填) | 返回對應任務的進度信息，若不填taskID則返回所有正在運行的任務進度
+  若填 all 則返回所有任務列表(歷史紀錄)
+  /task | 返回所有正在執行的正在執行的任務詳情
+  /task 7 | 返回ID为 7 的任務詳情
+  /task all | 返回所有任務紀錄列表
+  /task clear | 清除所有狀態為finished的任務紀錄
+  /task rm 7 | 刪除編號為 7 的任務紀錄
+  =====================
+  /bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
+  會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
+  範例：
+  /bm | 返回所有設定的資料夾
+  /bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
+  /bm unset movie | 刪除此收藏夾
+  </pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
 }
 
 function send_bm_help (chat_id) {
   const text = `<pre>/bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
-會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
-範例：
-/bm | 返回所有設定的資料夾
-/bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
-/bm unset movie | 刪除此收藏夾
-</pre>`
+  會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
+  範例：
+  /bm | 返回所有設定的資料夾
+  /bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
+  /bm unset movie | 刪除此收藏夾
+  </pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
 }
 
 function send_task_help (chat_id) {
   const text = `<pre>/task [action/id] [id] | 查詢或管理任務進度
-範例：
-/task | 返回所有正在執行的正在執行的任務詳情
-/task 7 | 返回ID为 7 的任務詳情
-/task all | 返回所有任務紀錄列表
-/task clear | 清除所有狀態為finished的任務紀錄
-/task rm 7 | 刪除編號為 7 的任務紀錄
-</pre>`
+  範例：
+  /task | 返回所有正在執行的正在執行的任務詳情
+  /task 7 | 返回ID为 7 的任務詳情
+  /task all | 返回所有任務紀錄列表
+  /task clear | 清除所有狀態為finished的任務紀錄
+  /task rm 7 | 刪除編號為 7 的任務紀錄
+  </pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
 }
 
@@ -86,7 +86,7 @@ function clear_tasks (chat_id) {
 
 function rm_task ({ task_id, chat_id }) {
   const exist = db.prepare('select id from task where id=?').get(task_id)
-  if (!exist) return sm({ chat_id, text: `不存在编号为 ${task_id} 的任务记录` })
+  if (!exist) return sm({ chat_id, text: `不存在任務ID為 ${task_id} 的任務紀錄` })
   db.prepare('delete from task where id=?').run(task_id)
   db.prepare('delete from copied where taskid=?').run(task_id)
   if (chat_id) sm({ chat_id, text: `已刪除任務 ${task_id} 紀錄` })
@@ -211,30 +211,26 @@ async function send_all_tasks (chat_id) {
 async function get_task_info (task_id) {
   const record = db.prepare('select * from task where id=?').get(task_id)
   if (!record) return {}
-  const { source, target, status, copied, mapping, ctime, ftime } = record
+  const { source, target, status, mapping, ctime, ftime } = record
+  const { copied_files } = db.prepare('select count(fileid) as copied_files from copied where taskid=?').get(task_id)
   const folder_mapping = mapping && mapping.trim().split('\n')
   const new_folder = folder_mapping && folder_mapping[0].split(' ')[1]
   const { summary } = db.prepare('select summary from gd where fid=?').get(source) || {}
   const { file_count, folder_count, total_size } = summary ? JSON.parse(summary) : {}
-  const copied_files = copied ? copied.trim().split('\n').length : 0
+  const total_count = (file_count || 0) + (folder_count || 0)
   const copied_folders = folder_mapping ? (folder_mapping.length - 1) : 0
   let text = '任務ID：' + task_id + '\n'
   const folder_name = await get_folder_name(source)
   text += '源資料夾：' + gen_link(source, folder_name) + '\n'
-  text += '目的位置：' + gen_link(target) + '\n'
+  text += '目的位置：' + gen_link(target, get_alias_by_target(target)) + '\n'
   text += '新資料夾：' + (new_folder ? gen_link(new_folder) : '尚未創建') + '\n'
   text += '任務狀態：' + status + '\n'
   text += '創建時間：' + dayjs(ctime).format('YYYY-MM-DD HH:mm:ss') + '\n'
   text += '完成時間：' + (ftime ? dayjs(ftime).format('YYYY-MM-DD HH:mm:ss') : '未完成') + '\n'
-  var pct = copied_folders/(folder_count === undefined ? '未知數量' : folder_count)*100
-  pct = pct.toFixed(2);
-  text += '目錄進度：' + copied_folders + '/' + (folder_count === undefined ? '未知數量' : folder_count) + ' - ' + pct + '%\n'
-  pct = copied_files/(file_count === undefined ? '未知數量' : file_count)*100
-  pct = pct.toFixed(2);
-  text += '文件進度：' + copied_files + '/' + (file_count === undefined ? '未知數量' : file_count) + ' - ' + pct + '%\n'
+  text += '目錄進度：' + copied_folders + '/' + (folder_count === undefined ? '未知數量' : folder_count) + ' - ' + (copied_folders/folder_count*100).toFixed(3) + '%\n'
+  text += '文件進度：' + copied_files + '/' + (file_count === undefined ? '未知數量' : file_count) + ' - ' + (copied_files/file_count*100).toFixed(3) + '%\n'
   text += '合計大小：' + (total_size || '未知大小')
-  const total_count = (folder_count || 0) + (file_count || 0)
-  return { text, status, total_count }
+  return { text, status, folder_count }
 }
 
 async function send_task_info ({ task_id, chat_id }) {
@@ -248,7 +244,7 @@ async function send_task_info ({ task_id, chat_id }) {
   } catch (e) {
     console.log('fail to send message to tg', e.message)
   }
-  // get_task_info 在task目录数超大时比较吃cpu，以后最好把mapping也另存一张表
+  //get_task_info 在task目录数超大时比较吃cpu，以后最好把mapping也另存一张表
   if (!message_id || status !== 'copying') return
   const loop = setInterval(async () => {
     const url = `https://api.telegram.org/bot${tg_token}/editMessageText`
@@ -285,9 +281,7 @@ async function tg_copy ({ fid, target, chat_id, update }) { // return task_id
     })
     .catch(err => {
       const task_id = record && record.id
-      if (task_id){
-      	db.prepare('update task set status=? where id=?').run('error', task_id)
-      }
+      if (task_id) db.prepare('update task set status=? where id=?').run('error', task_id)
       if (!record) record = {}
       console.error('複製失敗', fid, '-->', target)
       console.error(err)
@@ -326,7 +320,7 @@ async function send_count ({ fid, chat_id, update }) {
     chat_id,
     parse_mode: 'HTML',
     text: `<pre>源資料夾名稱：${name}
-源連結：${gd_link}
+    源連結：${gd_link}
 ${table}</pre>`
   }).catch(async err => {
     // const description = err.response && err.response.data && err.response.data.description
@@ -339,12 +333,12 @@ ${table}</pre>`
         chat_id,
         parse_mode: 'HTML',
         text: `連結：<a href="https://drive.google.com/drive/folders/${fid}">${fid}</a>\n<pre>
-表格太長超出telegram訊息限制，僅顯示概要：
-目錄名稱：${name}
-文件總數：${file_count}
-目錄總數：${folder_count}
-合計大小：${total_size}
-</pre>`
+        表格太長超出telegram訊息限制，僅顯示概要：
+        目錄名稱：${name}
+        文件總數：${file_count}
+        目錄總數：${folder_count}
+        合計大小：${total_size}
+        </pre>`
       })
     }
     throw err

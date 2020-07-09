@@ -388,7 +388,7 @@ async function get_info_by_id (fid, use_sa) {
     includeItemsFromAllDrives: true,
     supportsAllDrives: true,
     corpora: 'allDrives',
-    fields: 'id, parents'
+    fields: 'id,name, parents'
   }
   url += '?' + params_to_query(params)
   const headers = await gen_headers(use_sa)
@@ -506,8 +506,8 @@ async function real_copy ({ source, target, name, min_size, update, dncnr, not_t
     let files = arr.filter(v => v.mimeType !== FOLDER_TYPE)
     if (min_size) files = files.filter(v => v.size >= min_size)
     const folders = arr.filter(v => v.mimeType === FOLDER_TYPE)
-    console.log('待複製的目錄數：', folders.length)
-    console.log('待複製的檔案數：', files.length)
+    console.log('待复制的目录数：', folders.length)
+    console.log('待复制的文件数：', files.length)
     const mapping = await create_folders({
       source,
       folders,
@@ -524,9 +524,10 @@ async function real_copy ({ source, target, name, min_size, update, dncnr, not_t
 async function copy_files ({ files, mapping, service_account, root, task_id }) {
   if (!files.length) return
   console.log('\n開始複製文件，總數：', files.length)
+
   const loop = setInterval(() => {
     const now = dayjs().format('HH:mm:ss')
-    const message = `${now} | 已複製的檔案數 ${count} | 排隊中檔案數${files.length}`
+    const message = `${now} | 已複製的檔案數 ${count} | 排隊中檔案數 ${files.length}`
     print_progress(message)
   }, 1000)
 
@@ -580,6 +581,7 @@ async function copy_files ({ files, mapping, service_account, root, task_id }) {
   //   }
   // })).finally(() => clearInterval(loop))
 }
+
 async function copy_file (id, parent, use_sa, limit, task_id) {
   let url = `https://www.googleapis.com/drive/v3/files/${id}/copy`
   let params = { supportsAllDrives: true }
