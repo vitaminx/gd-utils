@@ -24,57 +24,57 @@ async function get_folder_name (fid) {
 
 function send_help (chat_id) {
   const text = `<pre>[使用說明]
-  ***不支持單檔分享***
-  命令 ｜ 說明
-  =====================
-  /help | 返回本使用說明
-  =====================
-  /count sourceID [-u] | 返回sourceID的文件統計資訊
-  sourceID可以是共享網址本身，也可以是共享ID。如果命令最后加上 -u，則無視快取記錄強制從線上獲取，適合一段時候後才更新完畢的分享連結。
-  =====================
-  /copy sourceID targetID(選填) [-u] | 將sourceID的文件複製到targetID裡（會新建一個資料夾）
-  若無targetID，則會複製到預設位置（config.js中的DEFAULT_TARGET）。
-  如果設定了bookmark，那麼targetID也可以是bookmark的標籤名。
-  如果命令最後加上 -u，則無視快取記錄強制從線上獲取源資料夾資訊。返回拷貝任務的taskID
-  =====================
-  /task taskID(選填) | 返回對應任務的進度信息，若不填taskID則返回所有正在運行的任務進度
-  若填 all 則返回所有任務列表(歷史紀錄)
-  /task | 返回所有正在執行的正在執行的任務詳情
-  /task 7 | 返回ID为 7 的任務詳情
-  /task all | 返回所有任務紀錄列表
-  /task clear | 清除所有狀態為finished的任務紀錄
-  /task rm 7 | 刪除編號為 7 的任務紀錄
-  =====================
-  /bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
-  會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
-  範例：
-  /bm | 返回所有設定的資料夾
-  /bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
-  /bm unset movie | 刪除此收藏夾
-  </pre>`
+***不支持單檔分享***
+命令 ｜ 說明
+=====================
+/help | 返回本使用說明
+=====================
+/count sourceID [-u] | 返回sourceID的文件統計資訊
+sourceID可以是共享網址本身，也可以是共享ID。如果命令最后加上 -u，則無視快取記錄強制從線上獲取，適合一段時候後才更新完畢的分享連結。
+=====================
+/copy sourceID targetID(選填) [-u] | 將sourceID的文件複製到targetID裡（會新建一個資料夾）
+若無targetID，則會複製到預設位置（config.js中的DEFAULT_TARGET）。
+如果設定了bookmark，那麼targetID也可以是bookmark的標籤名。
+如果命令最後加上 -u，則無視快取記錄強制從線上獲取源資料夾資訊。返回拷貝任務的taskID
+=====================
+/task taskID(選填) | 返回對應任務的進度信息，若不填taskID則返回所有正在運行的任務進度
+若填 all 則返回所有任務列表(歷史紀錄)
+/task | 返回所有正在執行的正在執行的任務詳情
+/task 7 | 返回ID为 7 的任務詳情
+/task all | 返回所有任務紀錄列表
+/task clear | 清除所有狀態為finished的任務紀錄
+/task rm 7 | 刪除編號為 7 的任務紀錄
+=====================
+/bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
+會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
+範例：
+/bm | 返回所有設定的資料夾
+/bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
+/bm unset movie | 刪除此收藏夾
+</pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
 }
 
 function send_bm_help (chat_id) {
   const text = `<pre>/bm [action] [alias] [target] | bookmark，添加常用目的資料夾ID
-  會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
-  範例：
-  /bm | 返回所有設定的資料夾
-  /bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
-  /bm unset movie | 刪除此收藏夾
-  </pre>`
+會在輸入共享連結後返回的「文件統計」「開始複製」這兩個按鈕的下方出現，方便複製到常用位置。
+範例：
+/bm | 返回所有設定的資料夾
+/bm set movie folder-id | 將folder-id加入到收藏夾，標籤名設為movie
+/bm unset movie | 刪除此收藏夾
+</pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
 }
 
 function send_task_help (chat_id) {
   const text = `<pre>/task [action/id] [id] | 查詢或管理任務進度
-  範例：
-  /task | 返回所有正在執行的正在執行的任務詳情
-  /task 7 | 返回ID为 7 的任務詳情
-  /task all | 返回所有任務紀錄列表
-  /task clear | 清除所有狀態為finished的任務紀錄
-  /task rm 7 | 刪除編號為 7 的任務紀錄
-  </pre>`
+範例：
+/task | 返回所有正在執行的正在執行的任務詳情
+/task 7 | 返回ID为 7 的任務詳情
+/task all | 返回所有任務紀錄列表
+/task clear | 清除所有狀態為finished的任務紀錄
+/task rm 7 | 刪除編號為 7 的任務紀錄
+</pre>`
   return sm({ chat_id, text, parse_mode: 'HTML' })
 }
 
@@ -320,7 +320,7 @@ async function send_count ({ fid, chat_id, update }) {
     chat_id,
     parse_mode: 'HTML',
     text: `<pre>源資料夾名稱：${name}
-  源連結：${gd_link}
+源連結：${gd_link}
 ${table}</pre>`
   }).catch(async err => {
     // const description = err.response && err.response.data && err.response.data.description
@@ -333,12 +333,12 @@ ${table}</pre>`
         chat_id,
         parse_mode: 'HTML',
         text: `連結：<a href="https://drive.google.com/drive/folders/${fid}">${fid}</a>\n<pre>
-        表格太長超出telegram訊息限制，僅顯示概要：
-        目錄名稱：${name}
-        文件總數：${file_count}
-        目錄總數：${folder_count}
-        合計大小：${total_size}
-        </pre>`
+表格太長超出telegram訊息限制，僅顯示概要：
+目錄名稱：${name}
+文件總數：${file_count}
+目錄總數：${folder_count}
+合計大小：${total_size}
+</pre>`
       })
     }
     throw err
