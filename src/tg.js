@@ -320,7 +320,7 @@ async function send_count ({ fid, chat_id, update }) {
     chat_id,
     parse_mode: 'HTML',
     text: `<pre>源資料夾名稱：${name}
-    源連結：${gd_link}
+  源連結：${gd_link}
 ${table}</pre>`
   }).catch(async err => {
     // const description = err.response && err.response.data && err.response.data.description
