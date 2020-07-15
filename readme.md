@@ -4,6 +4,8 @@
 
 > 我的readme可能不夠完全, 主要寫上我更新、修改的內容, 具體說明還是看[這邊](https://github.com/iwestlin/gd-utils)和[這邊](https://github.com/vitaminx/gd-utils)吧
 ## 更新紀錄
+### 2020.07.15
+  - 更新了單擋複製、tree列表的功能
 ### 2020.07.07
   - 參照原作者@iwestlin更新tg.js及gd.js
   - 整體繁體化, 介面部分
