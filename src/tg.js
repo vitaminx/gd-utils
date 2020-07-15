@@ -4,12 +4,13 @@ const axios = require('@viegg/axios')
 const HttpsProxyAgent = require('https-proxy-agent')
 
 const { db } = require('../db')
-const { gen_count_body, validate_fid, real_copy, get_name_by_id } = require('./gd')
-const { AUTH, DEFAULT_TARGET, USE_PERSONAL_AUTH, BUTTON_LEVEL } = require('../config')
+const { gen_count_body, validate_fid, real_copy, get_name_by_id, get_info_by_id, copy_file } = require('./gd')
+const { AUTH, DEFAULT_TARGET, USE_PERSONAL_AUTH } = require('../config')
+const { BUTTON_LEVEL } = require('../config_mod')
 const { tg_token } = AUTH
 const gen_link = (fid, text) => `<a href="https://drive.google.com/drive/folders/${fid}">${text || fid}</a>`
 
-if (!tg_token) throw new Error('請先在config.js中設定tg_token')
+if (!tg_token) throw new Error('请先在config.js里设置tg_token')
 const { https_proxy } = process.env
 const axins = axios.create(https_proxy ? { httpsAgent: new HttpsProxyAgent(https_proxy) } : {})
 
@@ -18,7 +19,7 @@ const FID_TO_NAME = {}
 async function get_folder_name (fid) {
   let name = FID_TO_NAME[fid]
   if (name) return name
-  name = await get_name_by_id(fid)
+  name = await get_name_by_id(fid, !USE_PERSONAL_AUTH)
   return FID_TO_NAME[fid] = name
 }
 
@@ -244,7 +245,7 @@ async function send_task_info ({ task_id, chat_id }) {
   } catch (e) {
     console.log('fail to send message to tg', e.message)
   }
-  //get_task_info 在task目录数超大时比较吃cpu，以后最好把mapping也另存一张表
+  // get_task_info 在task目录数超大时比较吃cpu，以后如果最好把mapping也另存一张表
   if (!message_id || status !== 'copying') return
   const loop = setInterval(async () => {
     const url = `https://api.telegram.org/bot${tg_token}/editMessageText`
@@ -259,6 +260,14 @@ async function tg_copy ({ fid, target, chat_id, update }) { // return task_id
   if (!target) {
     sm({ chat_id, text: '請輸入目的地ID或先在config.js中設定預設複製的目的地ID(DEFAULT_TARGET)' })
     return
+  }
+  const file = await get_info_by_id(fid, !USE_PERSONAL_AUTH)
+  if (file && file.mimeType !== 'application/vnd.google-apps.folder') {
+    return copy_file(fid, target, !USE_PERSONAL_AUTH).then(data => {
+      sm({ chat_id, parse_mode: 'HTML', text: `單檔複製成功，位置：${gen_link(target)}` })
+    }).catch(e => {
+      sm({ chat_id, text: `單檔複製成功失敗，失敗訊息：${e.message}` })
+    })
   }
 
   let record = db.prepare('select id, status from task where source=? and target=?').get(fid, target)
@@ -312,7 +321,7 @@ function reply_cb_query ({ id, data }) {
 async function send_count ({ fid, chat_id, update }) {
   sm({ chat_id, text: `開始獲取 ${fid} 所有檔案資訊，請稍後，建議統計完成前先不要開始複製，因为複製也需要先獲取來源資料夾資訊` })
   const table = await gen_count_body({ fid, update, type: 'tg', service_account: !USE_PERSONAL_AUTH })
-  if (!table) return sm({ chat_id, parse_mode: 'HTML', text: gen_link(fid) + ' 資訊獲取失敗' })
+  if (!table) return sm({ chat_id, parse_mode: 'HTML', text: gen_link(fid) + ' 信息获取失败' })
   const url = `https://api.telegram.org/bot${tg_token}/sendMessage`
   const gd_link = `https://drive.google.com/drive/folders/${fid}`
   const name = await get_folder_name(fid)
@@ -361,9 +370,11 @@ function extract_fid (text) {
     if (!text.startsWith('http')) text = 'https://' + text
     const u = new URL(text)
     if (u.pathname.includes('/folders/')) {
-      const reg = /[^/?]+$/
-      const match = u.pathname.match(reg)
-      return match && match[0]
+      return u.pathname.split('/').map(v => v.trim()).filter(v => v).pop()
+    } else if (u.pathname.includes('/file/')) {
+      const file_reg = /file\/d\/([a-zA-Z0-9_-]+)/
+      const file_match = u.pathname.match(file_reg)
+      return file_match && file_match[1]
     }
     return u.searchParams.get('id')
   } catch (e) {
