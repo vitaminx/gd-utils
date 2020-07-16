@@ -219,7 +219,7 @@ async function get_task_info (task_id) {
   const { file_count, folder_count, total_size } = summary ? JSON.parse(summary) : {}
   const total_count = (file_count || 0) + (folder_count || 0)
   const copied_folders = folder_mapping ? (folder_mapping.length - 1) : 0
-  let text = '任務ID：' + task_id + '\n'
+  let text = '任務ID：' + task_id + '    [' + status + ']\n'
   const folder_name = await get_folder_name(source)
   text += '源資料夾：' + gen_link(source, folder_name) + '\n'
   text += '目的位置：' + gen_link(target, get_alias_by_target(target)) + '\n'
