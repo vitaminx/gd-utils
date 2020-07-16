@@ -3,7 +3,7 @@
 > 不只是最快的 google drive 拷貝工具 [與其他工具的對比](./compare.md)
 
 > 我的readme可能不夠完全, 主要寫上我更新、修改的內容, 具體說明還是看[這邊](https://github.com/iwestlin/gd-utils)和[這邊](https://github.com/vitaminx/gd-utils)吧
-## 從其他專案轉移至繁體中文專案
+## 從其他專案轉移至本繁中專案
 ```
 pm2 delete 0
 mv ./gd-utils/sa ./gd-utils/config.js ./gd-utils/gdurl.sqlite ./
