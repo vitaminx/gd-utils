@@ -25,7 +25,6 @@ async function get_folder_name (fid) {
 
 function send_help (chat_id) {
   const text = `<pre>[使用說明]
-***不支持單檔分享***
 命令 ｜ 說明
 =====================
 /help | 返回本使用說明
