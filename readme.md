@@ -3,13 +3,30 @@
 > 不只是最快的 google drive 拷貝工具 [與其他工具的對比](./compare.md)
 
 > 我的readme可能不夠完全, 主要寫上我更新、修改的內容, 具體說明還是看[這邊](https://github.com/iwestlin/gd-utils)和[這邊](https://github.com/vitaminx/gd-utils)吧
+## 從其他專案轉移至繁體中文專案
+```
+pm2 delete 0
+mv ./gd-utils/sa ./gd-utils/config.js ./gd-utils/gdurl.sqlite ./
+rm -rf gd-utils
+git clone https://github.com/liaojack8/gd-utils-cht && cd gd-utils-cht
+npm install
+rm -rf sa config.js gdurl.sqlite
+cd ..
+mv sa config.js gdurl.sqlite ./gd-utils-cht/
+pm2 start ./gd-utils-cht/server.js
+sudo pm2 save
+```
+  - Demo Video: [https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88](https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88)
 ## 更新紀錄
+### 2020.07.16
+  - 新增了從其他版本轉移到本專案的方式及教學
+  - 改用config_mod.js, 可自訂按鈕顯示的個數(每列), 可設定為1或2, 或自訂sa文件路徑(此文件不修改也可以正常使用bot)
 ### 2020.07.15
-  - 更新了單檔複製、tree列表的功能
+  - 參照原作者更新, 加入單檔複製、tree列表的功能
 ### 2020.07.07
   - 參照原作者@iwestlin更新tg.js及gd.js
   - 整體繁體化, 介面部分
-  - 新增用戶可以在config.js自訂按鈕顯示的個數(每列), 可設定為1或2
+  - ~~新增用戶可以在config.js自訂按鈕顯示的個數(每列), 可設定為1或2~~
 ### 2020.07.06
   - 部分繁體中文化
   - 執行/task命令時, 會回傳完成度百分比
