@@ -10,7 +10,7 @@ const { BUTTON_LEVEL } = require('../config_mod')
 const { tg_token } = AUTH
 const gen_link = (fid, text) => `<a href="https://drive.google.com/drive/folders/${fid}">${text || fid}</a>`
 
-if (!tg_token) throw new Error('请先在config.js里设置tg_token')
+if (!tg_token) throw new Error('請先在config.js裡設定tg_token')
 const { https_proxy } = process.env
 const axins = axios.create(https_proxy ? { httpsAgent: new HttpsProxyAgent(https_proxy) } : {})
 
@@ -86,15 +86,15 @@ function clear_tasks (chat_id) {
 
 function rm_task ({ task_id, chat_id }) {
   const exist = db.prepare('select id from task where id=?').get(task_id)
-  if (!exist) return sm({ chat_id, text: `不存在任務ID為 ${task_id} 的任務紀錄` })
+  if (!exist) return sm({ chat_id, text: `不存在任務ID為 ${task_id} 的任務記錄` })
   db.prepare('delete from task where id=?').run(task_id)
   db.prepare('delete from copied where taskid=?').run(task_id)
-  if (chat_id) sm({ chat_id, text: `已刪除任務 ${task_id} 紀錄` })
+  if (chat_id) sm({ chat_id, text: `已刪除任務 ${task_id} 記錄` })
 }
 
 function send_all_bookmarks (chat_id) {
   let records = db.prepare('select alias, target from bookmark').all()
-  if (!records.length) return sm({ chat_id, text: '資料庫中沒有收藏紀錄' })
+  if (!records.length) return sm({ chat_id, text: '數據庫中沒有收藏記錄' })
   const tb = new Table({ style: { head: [], border: [] } })
   const headers = ['標籤名', 'dstID']
   records = records.map(v => [v.alias, v.target])
@@ -107,7 +107,7 @@ function set_bookmark ({ chat_id, alias, target }) {
   const record = db.prepare('select alias from bookmark where alias=?').get(alias)
   if (record) return sm({ chat_id, text: '資料庫中已有同名的收藏' })
   db.prepare('INSERT INTO bookmark (alias, target) VALUES (?, ?)').run(alias, target)
-  return sm({ chat_id, text: `成功設定收藏${alias} | ${target}` })
+  return sm({ chat_id, text: `成功設定收藏：${alias} | ${target}` })
 }
 
 function unset_bookmark ({ chat_id, alias }) {
@@ -139,6 +139,10 @@ function send_choice ({ fid, chat_id }) {
         ],
         [
           { text: '開始複製', callback_data: `copy ${fid}` }
+        ],
+        [
+          { text: '強制更新', callback_data: `update ${fid}` },
+          { text: '清除', callback_data: `clear_button` }
         ]
       ].concat(gen_bookmark_choices(fid))
     }
@@ -152,6 +156,10 @@ function send_choice ({ fid, chat_id }) {
         [
           { text: '文件統計', callback_data: `count ${fid}` },
           { text: '開始複製', callback_data: `copy ${fid}` }
+        ],
+        [
+          { text: '強制更新', callback_data: `update ${fid}` },
+          { text: '清除', callback_data: `clear_button` }
         ]
       ].concat(gen_bookmark_choices(fid))
     }
@@ -167,15 +175,12 @@ function gen_bookmark_choices (fid) {
   }else{
   	level = BUTTON_LEVEL
   }
-  const gen_choice = v => ({text: `複製到 ${v.alias}`, callback_data: `copy ${fid} ${v.alias}`})
+  const gen_choice = v => ({ text: `複製到 ${v.alias}`, callback_data: `copy ${fid} ${v.alias}` })
   const records = db.prepare('select * from bookmark').all()
   const result = []
-  for (let i = 0; i < records.length; i++) {
+  for (let i = 0; i < records.length; i += 2) {
     const line = [gen_choice(records[i])]
-    for(let j = 0; j < level-1; j ++){
-      if (records[i+1]) line.push(gen_choice(records[i+1]))
-        i++
-    }
+    if (records[i + 1]) line.push(gen_choice(records[i + 1]))
     result.push(line)
   }
   return result
@@ -201,8 +206,8 @@ async function send_all_tasks (chat_id) {
     // const description = err.response && err.response.data && err.response.data.description
     // if (description && description.includes('message is too long')) {
     if (true) {
-      const text = [headers].concat(records).map(v => v.join('\t')).join('\n')
-      return sm({ chat_id, parse_mode: 'HTML', text: `所有拷貝任務：\n<pre>${text}</pre>` })
+      const text = [headers].concat(records.slice(-100)).map(v => v.join('\t')).join('\n')
+      return sm({ chat_id, parse_mode: 'HTML', text: `所有拷貝任務(僅顯示最近100項)：\n<pre>${text}</pre>` })
     }
     console.error(err)
   })
@@ -247,10 +252,9 @@ async function send_task_info ({ task_id, chat_id }) {
   // get_task_info 在task目录数超大时比较吃cpu，以后如果最好把mapping也另存一张表
   if (!message_id || status !== 'copying') return
   const loop = setInterval(async () => {
-    const url = `https://api.telegram.org/bot${tg_token}/editMessageText`
     const { text, status } = await get_task_info(task_id)
     if (status !== 'copying') clearInterval(loop)
-    axins.post(url, { chat_id, message_id, text, parse_mode: 'HTML' }).catch(e => console.error(e.message))
+    sm({ chat_id, message_id, text, parse_mode: 'HTML' }, 'editMessageText')
   }, 10 * 1000)
 }
 
@@ -281,7 +285,7 @@ async function tg_copy ({ fid, target, chat_id, update }) { // return task_id
 
   real_copy({ source: fid, update, target, service_account: !USE_PERSONAL_AUTH, is_server: true })
     .then(async info => {
-      if (!record) record = {} // 防止无限循环
+      if (!record) record = {} // 防止無限循環
       if (!info) return
       const { task_id } = info
       const { text } = await get_task_info(task_id)
@@ -293,7 +297,7 @@ async function tg_copy ({ fid, target, chat_id, update }) { // return task_id
       if (!record) record = {}
       console.error('複製失敗', fid, '-->', target)
       console.error(err)
-      sm({ chat_id, text: '複製失敗，失敗訊息：' + err.message })
+      sm({ chat_id, text: (task_id || '') + '複製失敗，失敗訊息：' + err.message })
     })
 
   while (!record) {
@@ -320,7 +324,7 @@ function reply_cb_query ({ id, data }) {
 async function send_count ({ fid, chat_id, update }) {
   sm({ chat_id, text: `開始獲取 ${fid} 所有檔案資訊，請稍後，建議統計完成前先不要開始複製，因为複製也需要先獲取來源資料夾資訊` })
   const table = await gen_count_body({ fid, update, type: 'tg', service_account: !USE_PERSONAL_AUTH })
-  if (!table) return sm({ chat_id, parse_mode: 'HTML', text: gen_link(fid) + ' 信息获取失败' })
+  if (!table) return sm({ chat_id, parse_mode: 'HTML', text: gen_link(fid) + ' 資訊獲取失敗' })
   const url = `https://api.telegram.org/bot${tg_token}/sendMessage`
   const gd_link = `https://drive.google.com/drive/folders/${fid}`
   const name = await get_folder_name(fid)
@@ -346,18 +350,21 @@ ${table}</pre>`
 文件總數：${file_count}
 目錄總數：${folder_count}
 合計大小：${total_size}
-</pre>`
+</pre>` 
       })
     }
     throw err
   })
 }
 
-function sm (data) {
-  const url = `https://api.telegram.org/bot${tg_token}/sendMessage`
+function sm (data, endpoint) {
+  endpoint = endpoint || 'sendMessage'
+  const url = `https://api.telegram.org/bot${tg_token}/${endpoint}`
   return axins.post(url, data).catch(err => {
     // console.error('fail to post', url, data)
     console.error('fail to send message to tg:', err.message)
+    const err_data = err.response && err.response.data
+    err_data && console.error(err_data)
   })
 }
 
@@ -382,7 +389,8 @@ function extract_fid (text) {
 }
 
 function extract_from_text (text) {
-  const reg = /https?:\/\/drive.google.com\/[^\s]+/g
+  // const reg = /https?:\/\/drive.google.com\/[^\s]+/g
+  const reg = /https?:\/\/drive.google.com\/[a-zA-Z0-9_\\/?=&-]+/g
   const m = text.match(reg)
   return m && extract_fid(m[0])
 }

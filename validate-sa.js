@@ -79,15 +79,25 @@ async function get_invalid_sa (arr, fid) {
       await get_info(fid, access_token)
       good++
     } catch (e) {
+      handle_error(e)
       const status = e && e.response && e.response.status
-      if (Number(status) === 400) fails.push(filename) // access_token 獲取失敗
+      if (Number(status) === 400) fails.push(filename) // access_token 获取失败
 
       const data = e && e.response && e.response.data
       const code = data && data.error && data.error.code
-      if (Number(code) === 404) fails.push(filename) // 讀取資料夾訊息失敗
+      if ([404, 403].includes(Number(code))) fails.push(filename) // 读取文件夹信息失败
     }
   }
   return fails
+}
+
+function handle_error (err) {
+  const data = err && err.response && err.response.data
+  if (data) {
+    console.error(JSON.stringify(data))
+  } else {
+    console.error(err.message)
+  }
 }
 
 async function get_info (fid, access_token) {

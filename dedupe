@@ -2,6 +2,8 @@
 
 const { argv } = require('yargs')
   .usage('用法: ./$0 <folder-id> [options]')
+  .alias('y', 'yes')
+  .describe('yes', '如果發現重複項目，直接刪除')
   .alias('u', 'update')
   .describe('u', '不使用本地快取，則無視快取記錄強制從線上獲取源資料夾資訊')
   .alias('S', 'service_account')

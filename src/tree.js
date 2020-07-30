@@ -39,7 +39,7 @@ function gen_tree_data (data, is_folder) {
   const files = data.filter(v => !is_folder(v))
   const total_size = sum(files.map(v => v.size))
   const root = {
-    title: `/根目錄 [共${files.length} 個檔案（不包括資料夾）, ${format_size(total_size)}]`,
+    title: `/根目录 [共${files.length} 个文件（不包括文件夹）, ${format_size(total_size)}]`,
     key: data[0].parent
   }
   if (!folders.length) return [root]
@@ -53,7 +53,7 @@ function gen_tree_data (data, is_folder) {
   folders.forEach(v => {
     let {name, size, count, id} = v
     if (name.length > 50) name = name.slice(0, 48) + '...'
-    v.title = `${name} | [共${count}個檔案 ${format_size(size)}]`
+    v.title = `${name} | [共${count}个文件 ${format_size(size)}]`
   })
   root.children = sub_folders.map(v => gen_node(v, folders))
   return [root]
