@@ -19,6 +19,9 @@ sudo pm2 save
   - Demo Video: [https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88](https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88)
 ## 更新紀錄
 具體功能參考[iwestlin-changelog](https://github.com/iwestlin/gd-utils/blob/master/changelog.md)，前期工作基本做完，之後大概就是搬運了，可能考慮做一下i18n
+### 2020.07.30
+  - 同步原作者之更新 (清除按鈕、aria2.js等)
+  - 依舊保留了config_mod.js的修改項目, button-level的部分也套用清除按鈕的規則
 ### 2020.07.16
   - 新增了從其他版本轉移到本專案的方式及教學
   - 改用config_mod.js, 可自訂按鈕顯示的個數(每列), 可設定為1或2, 或自訂sa文件路徑(此文件不修改也可以正常使用bot)
