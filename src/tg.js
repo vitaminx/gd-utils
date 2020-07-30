@@ -139,12 +139,11 @@ function send_choice ({ fid, chat_id }) {
         ],
         [
           { text: '開始複製', callback_data: `copy ${fid}` }
-        ],
-        [
-          { text: '強制更新', callback_data: `update ${fid}` },
-          { text: '清除', callback_data: `clear_button` }
         ]
-      ].concat(gen_bookmark_choices(fid))
+      ].concat(gen_bookmark_choices(fid)).concat([[
+          { text: '強制更新', callback_data: `update ${fid}` },
+          { text: '清除按鈕', callback_data: `clear_button` }
+        ]])
     }
   	})
   }else{
@@ -156,12 +155,11 @@ function send_choice ({ fid, chat_id }) {
         [
           { text: '文件統計', callback_data: `count ${fid}` },
           { text: '開始複製', callback_data: `copy ${fid}` }
-        ],
-        [
-          { text: '強制更新', callback_data: `update ${fid}` },
-          { text: '清除', callback_data: `clear_button` }
         ]
-      ].concat(gen_bookmark_choices(fid))
+      ].concat(gen_bookmark_choices(fid)).concat([[
+          { text: '強制更新', callback_data: `update ${fid}` },
+          { text: '清除按鈕', callback_data: `clear_button` }
+        ]])
     }
   	})
   }
