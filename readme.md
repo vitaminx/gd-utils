@@ -4,7 +4,7 @@
 
 > 我的readme可能不夠完全, 主要寫上我更新、修改的內容, 具體說明還是看[這邊](https://github.com/iwestlin/gd-utils)和[這邊](https://github.com/vitaminx/gd-utils)吧
 ## 從其他專案轉移至本繁中專案
-```
+```sh
 pm2 delete 0
 mv ./gd-utils/sa ./gd-utils/config.js ./gd-utils/gdurl.sqlite ./
 rm -rf gd-utils
@@ -16,7 +16,7 @@ mv sa config.js gdurl.sqlite ./gd-utils-cht/
 pm2 start ./gd-utils-cht/server.js
 sudo pm2 save
 ```
-  - Demo Video: [https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88](https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88)
+  - Demo Video: ~~[https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88](https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88)~~  (My account has been blocked)
 ## 更新紀錄
 具體功能參考[iwestlin-changelog](https://github.com/iwestlin/gd-utils/blob/master/changelog.md)，前期工作基本做完，之後大概就是搬運了，可能考慮做一下i18n
 ### 2020.07.30
@@ -53,15 +53,15 @@ sudo pm2 save
   - gdutils項目一鍵部署腳本（包括“查詢轉存”和“TG機器人”兩部分）
   ```    
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilsinstall.sh)"
-  ```    
+  ```
   - gdutils項目一鍵部署腳本之“轉存查詢部分”    
   ```    
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilscsinstall.sh)"
-  ```    
+  ```
   - gdutils項目一鍵部署腳本之“TG機器人部分”    
   ```    
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilsbotinstall.sh)"
-  ```  
+  ```
 - 安裝過程中需要輸入一下四個參數：    
   - 機器人TOKEN：這個在Telegram裡面找“@BotFather”註冊即可獲得    
   - Telegram用戶ID：在Telegram裡面向機器人@userinfobot发送消息即可獲得
