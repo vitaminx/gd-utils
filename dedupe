@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 const { argv } = require('yargs')
-  .usage('用法: ./$0 <source id> <target id> [options]')
+  .usage('用法: ./$0 <folder-id> [options]')
+  .alias('y', 'yes')
+  .describe('yes', '如果發現重複項目，直接刪除')
   .alias('u', 'update')
-  .describe('u', '不使用本地缓存，强制从线上获取源文件夹信息')
+  .describe('u', '不使用本地快取，則無視快取記錄強制從線上獲取源資料夾資訊')
   .alias('S', 'service_account')
-  .describe('S', '使用service account进行操作，前提是必须在 ./sa 目录下放置sa授权json文件')
+  .describe('S', '使用service account進行操作，前提是必須在 ./sa 目錄下存放sa授權json文件')
   .help('h')
   .alias('h', 'help')
 
@@ -17,8 +19,8 @@ if (validate_fid(fid)) {
   dedupe({ fid, update, service_account }).then(info => {
     if (!info) return
     const { file_count, folder_count } = info
-    console.log('任务完成，共删除文件数：', file_count, '目录数：', folder_count)
+    console.log('任務完成，共刪除檔案數：', file_count, '目錄數：', folder_count)
   })
 } else {
-  console.warn('目录ID缺失或格式错误')
+  console.warn('無目錄ID或格式錯誤')
 }

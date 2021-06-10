@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { argv } = require('yargs')
-  .usage('用法: ./$0 folder-id [options]\nfolder-id 是你想检测SA是否对其有阅读权限的目录ID')
+  .usage('用法: ./$0 folder-id\nfolder-id 是你想檢測SA是否對其有閱讀權限的目錄ID')
   .help('h')
   .alias('h', 'help')
 
@@ -28,18 +28,18 @@ main()
 async function main () {
   const [fid] = argv._
   if (validate_fid(fid)) {
-    console.log('开始检测', SA_TOKENS.length, '个SA帐号')
+    console.log('開始檢測', SA_TOKENS.length, '個SA帳號')
     const invalid_sa = await get_invalid_sa(SA_TOKENS, fid)
-    if (!invalid_sa.length) return console.log('已检测', SA_TOKENS.length, '个SA，未检测到无效帐号')
+    if (!invalid_sa.length) return console.log('已檢測', SA_TOKENS.length, '個SA，未檢測到無效帳號')
     const choice = await choose(invalid_sa.length)
     if (choice === 'yes') {
       mv_sa(invalid_sa)
-      console.log('成功移动')
+      console.log('成功移動')
     } else {
-      console.log('成功退出，无效的SA记录：', invalid_sa)
+      console.log('成功退出，無效的SA記錄：', invalid_sa)
     }
   } else {
-    console.warn('目录ID缺失或格式错误')
+    console.warn('目錄ID缺失或格式錯誤')
   }
 }
 
@@ -55,9 +55,9 @@ async function choose (count) {
   const answer = await prompts({
     type: 'select',
     name: 'value',
-    message: `检测到 ${count} 个无效的SA，是否将它们移动到 sa/invalid 目录下？`,
+    message: `檢測到 ${count} 個無效的SA，是否將它們移動到 sa/invalid 目錄下？`,
     choices: [
-      { title: 'Yes', description: '确认移动', value: 'yes' },
+      { title: 'Yes', description: '確認移動', value: 'yes' },
       { title: 'No', description: '不做更改，直接退出', value: 'no' }
     ],
     initial: 0
@@ -66,28 +66,38 @@ async function choose (count) {
 }
 
 async function get_invalid_sa (arr, fid) {
-  if (!fid) throw new Error('请指定要检测权限的目录ID')
+  if (!fid) throw new Error('請指定要檢測權限的目錄ID')
   const fails = []
   let flag = 0
   let good = 0
   for (const v of arr) {
-    console.log('检测进度', `${flag++}/${arr.length}`)
-    console.log('正常/异常', `${good}/${fails.length}`)
+    console.log('檢測進度', `${flag++}/${arr.length}`)
+    console.log('正常/異常', `${good}/${fails.length}`)
     const {gtoken, filename} = v 
     try {
       const access_token = await get_sa_token(gtoken)
       await get_info(fid, access_token)
       good++
     } catch (e) {
+      handle_error(e)
       const status = e && e.response && e.response.status
       if (Number(status) === 400) fails.push(filename) // access_token 获取失败
 
       const data = e && e.response && e.response.data
       const code = data && data.error && data.error.code
-      if (Number(code) === 404) fails.push(filename) // 读取文件夹信息失败
+      if ([404, 403].includes(Number(code))) fails.push(filename) // 读取文件夹信息失败
     }
   }
   return fails
+}
+
+function handle_error (err) {
+  const data = err && err.response && err.response.data
+  if (data) {
+    console.error(JSON.stringify(data))
+  } else {
+    console.error(err.message)
+  }
 }
 
 async function get_info (fid, access_token) {

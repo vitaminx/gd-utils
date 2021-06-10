@@ -5,19 +5,21 @@ const bytes = require('bytes')
 const { argv } = require('yargs')
   .usage('用法: ./$0 <source id> <target id> [options]\ntarget id可选，不填则使用config.js里的DEFAULT_TARGET')
   .alias('u', 'update')
-  .describe('u', '不使用本地缓存，强制从线上获取源文件夹信息')
+  .describe('u', '不使用本地快取，則無視快取記錄強制從線上獲取源資料夾資訊')
+  .alias('y', 'yes')
+  .describe('yes', '如果發現拷貝紀錄，直接繼續上次的進度')
   .alias('f', 'file')
-  .describe('f', '复制单个文件')
+  .describe('f', '複製單一文件')
   .alias('n', 'name')
-  .describe('n', '给目标文件夹重命名，不填则保留原始目录名')
+  .describe('n', '給目標資料夾重新命名，不填則保留原始目錄名')
   .alias('N', 'not_teamdrive')
-  .describe('N', '如果不是团队盘链接，可以加上此参数以提高接口查询效率，降低延迟')
+  .describe('N', '如果不是小組雲端硬碟連結，可以加上此参數以提高接口查詢效率，降低延遲')
   .alias('s', 'size')
-  .describe('s', '不填默认拷贝全部文件，如果设置了这个值，则过滤掉小于这个size的文件，必须以b结尾，比如10mb')
+  .describe('s', '不填則預設拷貝全部文件，如果設置了这個值，則過濾掉小於这個大小的檔案，必須以b為結尾，比如10mb')
   .alias('S', 'service_account')
-  .describe('S', '指定使用service account进行操作，前提是必须在 ./sa 目录下放置json授权文件，请确保sa帐号拥有操作权限。')
+  .describe('S', '指定使用service account進行操作，前提是必須在 ./sa 目錄下放置json授權文件，請確認sa帳號擁有相關操作權限。')
   .alias('D', 'dncnr')
-  .describe('D', 'do not create new root, 不在目的地创建同名文件夹，直接将源文件夹中的文件原样复制到目的文件夹中')
+  .describe('D', 'do not create new root, 不在目的地創建同名資料夾，直接將來源資料夾中的文件原樣複製到目的資料夾中')
   .help('h')
   .alias('h', 'help')
 
@@ -33,19 +35,19 @@ if (validate_fid(source)) {
     if (!validate_fid(target)) throw new Error('target id 格式不正确')
     return copy_file(source, target, service_account).then(r => {
       const link = 'https://drive.google.com/drive/folders/' + target
-      console.log('任务完成，文件所在位置：\n', link)
+      console.log('任務完成，文件所在位置：\n', link)
     }).catch(console.error)
   }
   let min_size
   if (size) {
-    console.log(`不复制大小低于 ${size} 的文件`)
+    console.log(`不複製大小低於 ${size} 的文件`)
     min_size = bytes.parse(size)
   }
   copy({ source, target, name, min_size, update, not_teamdrive, service_account, dncnr }).then(folder => {
     if (!folder) return
     const link = 'https://drive.google.com/drive/folders/' + folder.id
-    console.log('\n任务完成，新文件夹链接：\n', link)
+    console.log('\n任務完成，新資料夾連結：\n', link)
   })
 } else {
-  console.warn('目录ID缺失或格式错误')
+  console.warn('無目錄ID或格式錯誤')
 }

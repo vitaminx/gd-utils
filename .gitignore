@@ -1,4 +1,5 @@
 node_modules/
-gdurl.sqlite
+gdurl.sqlite*
 config.js
 sa/*.json
+backup/*.sqlite

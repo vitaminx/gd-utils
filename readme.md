@@ -3,11 +3,34 @@
 > 不只是最快的 google drive 拷貝工具 [與其他工具的對比](./compare.md)
 
 > 我的readme可能不夠完全, 主要寫上我更新、修改的內容, 具體說明還是看[這邊](https://github.com/iwestlin/gd-utils)和[這邊](https://github.com/vitaminx/gd-utils)吧
+## 從其他專案轉移至本繁中專案
+```sh
+pm2 delete 0
+mv ./gd-utils/sa ./gd-utils/config.js ./gd-utils/gdurl.sqlite ./
+rm -rf gd-utils
+git clone https://github.com/liaojack8/gd-utils-cht && cd gd-utils-cht
+npm install
+rm -rf sa config.js gdurl.sqlite
+cd ..
+mv sa config.js gdurl.sqlite ./gd-utils-cht/
+pm2 start ./gd-utils-cht/server.js
+sudo pm2 save
+```
+  - Demo Video: ~~[https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88](https://drive.google.com/file/d/1CltOaBDa4FVQ6doBP3S84MFPpbs2tv88)~~  (My account has been blocked)
 ## 更新紀錄
+具體功能參考[iwestlin-changelog](https://github.com/iwestlin/gd-utils/blob/master/changelog.md)，前期工作基本做完，之後大概就是搬運了，可能考慮做一下i18n
+### 2020.07.30
+  - 同步原作者之更新 (清除按鈕、aria2.js等)
+  - 依舊保留了config_mod.js的修改項目, button-level的部分也套用清除按鈕的規則
+### 2020.07.16
+  - 新增了從其他版本轉移到本專案的方式及教學
+  - 改用config_mod.js, 可自訂按鈕顯示的個數(每列), 可設定為1或2, 或自訂sa文件路徑(此文件不修改也可以正常使用bot)
+### 2020.07.15
+  - 參照原作者更新, 加入單檔複製、tree列表的功能
 ### 2020.07.07
   - 參照原作者@iwestlin更新tg.js及gd.js
   - 整體繁體化, 介面部分
-  - 新增用戶可以在config.js自訂按鈕顯示的個數(每列), 可設定為1或2
+  - ~~新增用戶可以在config.js自訂按鈕顯示的個數(每列), 可設定為1或2~~
 ### 2020.07.06
   - 部分繁體中文化
   - 執行/task命令時, 會回傳完成度百分比
@@ -30,15 +53,15 @@
   - gdutils項目一鍵部署腳本（包括“查詢轉存”和“TG機器人”兩部分）
   ```    
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilsinstall.sh)"
-  ```    
+  ```
   - gdutils項目一鍵部署腳本之“轉存查詢部分”    
   ```    
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilscsinstall.sh)"
-  ```    
+  ```
   - gdutils項目一鍵部署腳本之“TG機器人部分”    
   ```    
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/liaojack8/gd-utils-cht/master/gdutilsbotinstall.sh)"
-  ```  
+  ```
 - 安裝過程中需要輸入一下四個參數：    
   - 機器人TOKEN：這個在Telegram裡面找“@BotFather”註冊即可獲得    
   - Telegram用戶ID：在Telegram裡面向機器人@userinfobot发送消息即可獲得
